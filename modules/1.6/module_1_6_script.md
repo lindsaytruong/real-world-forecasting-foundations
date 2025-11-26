@@ -44,7 +44,7 @@ Here's how first contact maps to our 5Q Framework.
 
 For Q1 — Target — we need to verify the target is clear, numeric, and clean. Can we actually use this as a forecasting target?
 
-For Q2 — Metric — we're looking for issues like missingness, outliers, or duplicates that would bias our evaluation. If we can't trust our metrics, we can't trust our models.
+For Q2 — Metric — We want to select a metric that is mathematically sound and fits the business objective. When computing metrics, we're looking for issues like missingness, outliers, or duplicates that would bias our evaluation. If we can't trust our metrics, we can't trust our models.
 
 For Q3 — Horizon and Level — we need enough history at the right frequency and granularity. You can't forecast 12 weeks ahead if you only have 10 weeks of data.
 
@@ -61,8 +61,6 @@ We'll check each box as we work through the module. By the end, you'll know exac
 > **[Switch to notebook, run setup cell]**
 
 Let's start with our standard setup. Pandas, numpy, matplotlib for plotting. We're using TSForge, which wraps a lot of the utility functions we'll use today.
-
-Nothing special here — just getting our environment ready.
 
 > **[Run cell, show "✓ Setup complete"]**
 
@@ -112,11 +110,11 @@ Get this order wrong and you get silent failures. The code runs, but the numbers
 
 > **[Show the markdown explanation]**
 
-Messification converted our `ds` and `y` columns to strings. And here's a subtle thing — NaN values became the literal string `"nan"`. Not a null, not a missing value — the four-character string N-A-N.
+Messification converted our `ds` and `y` columns to strings. And here's a subtle thing — NaN values became the literal string `"nan"`. Not a null, not a missing value — the three-character string N-A-N.
 
 > **[Run the dtype check cell]**
 
-See? Both columns show `object` dtype. That's pandas-speak for "I don't know what this is, probably strings."
+See? Both columns show `object` dtype. That's pandas-speak for "I don't know what this is, probably strings." As an additional tip, object dtypes are very memory heavy and will slow down your workflow. In pandas avoid object dtypes when possible and use `category` for categorical data.
 
 > **[Show the to_numeric explanation]**
 
