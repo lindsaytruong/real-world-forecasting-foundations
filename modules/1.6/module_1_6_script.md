@@ -245,7 +245,7 @@ We group by all non-target, non-date columns and sum the target. This way we don
 
 > **[Run the week column cell]**
 
-The week column uses `to_period('W-FRI')` which gives weeks ending Friday — meaning weeks start on Saturday. That's the Walmart fiscal week convention.
+The week column uses `to_period('W-SAT')` which gives weeks ending Saturday — meaning weeks start on Sunday. That's the Walmart fiscal week convention.
 
 > **[Run the aggregation cell]**
 
