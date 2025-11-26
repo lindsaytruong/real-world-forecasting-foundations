@@ -1,5 +1,5 @@
 # Module 1.7: Understanding the M5 Dataset
-## Video Tutorial Script — Detailed Narration
+## Video Tutorial Script — Updated for New HTML Structure
 
 ---
 
@@ -17,135 +17,46 @@ But we used a helper function — `tsf.load_m5()` — that did a lot of work beh
 
 I've created an interactive explorer for the M5 dataset. Open the HTML file and follow along — I'll tell you where to click as we go.
 
-### Why This Matters
+You'll see five tabs that take you on a journey:
+- **📊 Raw Data** — The source files as downloaded from Kaggle
+- **📚 Vocabulary** — The four classifications you need to know
+- **🔍 Explore** — Deep dive into each file's fields
+- **🛠️ Transform** — How TSForge converts raw to forecast-ready
+- **🚀 Cheat Sheet** — Your go-to reference
 
-You might be thinking: "If the helper function works, why do I need to understand the raw data?"
-
-Two reasons:
-
-First, **not every dataset will have a helper**. When you get data from your company's warehouse or a new client, there's no `load_company_data()` function waiting for you. You need to understand data structures so you can wrangle any dataset into forecasting-ready format.
-
-Second, **understanding prevents leakage**. The M5 dataset has a critical trap — prices that look like they should be features but are actually unknown at forecast time. If you don't understand which fields are safe to use when, you'll build models that look perfect in validation but fail completely in production.
-
-So let's dig in.
+Let's start at the beginning.
 
 ---
 
-## The Raw M5 Structure
+## Tab 1: Raw Data — The M5 Data Structure
 
-> **[In the HTML: Click the "📖 Overview" tab if not already selected]**
+> **[In the HTML: You should be on the "📊 Raw Data" tab]**
 
-> **[In the HTML: Notice the "Reading This Guide: Raw vs. Derived" legend box — this shows you how to distinguish between original data and transformed fields throughout the explorer]**
+### What is M5?
 
-The raw M5 dataset from Kaggle has three files:
+The M5 dataset comes from Walmart and contains ~5 years of daily sales data for thousands of items across multiple stores. Your goal: predict future sales for 3,049 products across 10 stores in 3 US states (CA, TX, WI).
 
-| File | What It Contains | Rows |
-|------|------------------|------|
-| `sales_train.csv` | Daily unit sales (the target) + hierarchy IDs | 30,490 |
-| `calendar.csv` | Date attributes, events, SNAP schedules | 1,969 |
-| `sell_prices.csv` | Weekly prices by item-store | 6.8M |
+> **[In the HTML: Read the "Why This Matters" callout]**
 
-> **[In the HTML: Scroll down to see "The Three Files" section with the icons]**
+Understanding how these tables connect and what each field represents is not just academic — it's the difference between a model that works in notebooks and one that survives production. **Most forecasting failures happen at the data preparation stage, not the modeling stage.**
 
-You can see each file has a specific role. Sales is your target. Calendar is your known-at-time features. Prices is where the leakage trap lives.
+### The Three Raw Files
 
-Now here's something important to understand: **what you see depends on how you load the data**.
+> **[In the HTML: Look at the three file cards]**
 
-### M5 Files
+These are the **raw, untransformed files** exactly as downloaded from Kaggle. No preprocessing has been applied yet.
 
-> **[Show side-by-side comparison]**
+| File | What It Contains | Shape |
+|------|------------------|-------|
+| `sales_train.csv` | Historical daily sales (the target) + hierarchy IDs | 30,490 × 1,947 |
+| `calendar.csv` | Date information, events, SNAP schedules | 1,969 × 14 |
+| `sell_prices.csv` | Weekly pricing — handle with care! | 6,841,121 × 4 |
 
-The raw `sales_train.csv` from Kaggle is in **wide format**:
+Each file has a specific role. Sales is your target. Calendar is your known-at-time features. Prices is where the leakage trap lives.
 
-```
-item_id, dept_id, cat_id, store_id, state_id, d_1, d_2, d_3, ... d_1941
-FOODS_3_090, FOODS_3, FOODS, CA_3, CA, 3, 0, 5, ...
-```
+### Data Hierarchies
 
-Each row is one item-store combination. Each column `d_1` through `d_1941` is a day's sales. That's 1,941 columns of sales data.
-
-But when you use `tsf.load_m5()` or load from Nixtla's `datasetsforecast` package, you get **long format**:
-
-```
-unique_id, ds, y
-FOODS_3_090_CA_3, 2011-01-29, 3
-FOODS_3_090_CA_3, 2011-01-30, 0
-FOODS_3_090_CA_3, 2011-01-31, 5
-```
-
-Each row is one observation — one item, one store, one date, one sales value.
-
-**This is the format Nixtla and most forecasting libraries expect.** The transformation from wide to long is handled automatically by the helper.
-
-> **[In the HTML: Scroll down in the Overview tab to see the "Format Transformation: Raw → Modeling-Ready" diagram — this shows exactly what changes]**
-
-### What About unique_id?
-
-> **[Highlight the unique_id field]**
-
-In the raw data, there's no `unique_id` column. You have `item_id` and `store_id` separately.
-
-The helper creates `unique_id` by concatenating them: `FOODS_3_090` + `CA_3` = `FOODS_3_090_CA_3`.
-
-When you use `include_hierarchy=True` in `tsf.load_m5()`, you get both:
-- The combined `unique_id` for Nixtla compatibility
-- The separate hierarchy columns (`item_id`, `dept_id`, `cat_id`, `store_id`, `state_id`) for analysis
-
-This is what you saw in Module 1.6 when we loaded with `include_hierarchy=True`.
-
----
-
-## The Three Files in Detail
-
-> **[In the HTML: Click the "📊 Tables" tab]**
-
-Let's walk through each file and classify every field. You'll see three cards — one for each file. Click on each to explore the fields.
-
-### File 1: sales_train.csv (Target + Static IDs)
-
-> **[In the HTML: Click the blue "sales_train.csv" card]**
-
-> **[In the HTML: Notice the warning boxes now have 🔧 icons for derived fields — these help you distinguish what's in the raw data vs what you need to create]**
-
-This is your target data. In raw format:
-
-**Shape:** 30,490 rows × 1,947 columns
-- 6 identifier columns
-- 1,941 daily sales columns (d_1 through d_1941)
-
-**The identifier columns are all STATIC:**
-
-| Column | Classification | Description |
-|--------|---------------|-------------|
-| `item_id` | Static Identifier | 3,049 unique products |
-| `dept_id` | Static Feature | 7 departments |
-| `cat_id` | Static Feature | 3 categories (FOODS, HOBBIES, HOUSEHOLD) |
-| `store_id` | Static Identifier | 10 stores |
-| `state_id` | Static Feature | 3 states (CA, TX, WI) |
-
-**Static means these never change over time.** An item is always in the same department. A store is always in the same state. These are always safe to use as features.
-
-**The d_X columns are the TARGET:**
-
-| Column | Classification | Description |
-|--------|---------------|-------------|
-| `d_1, d_2, ... d_1941` | Target Variable | Daily unit sales starting 2011-01-29 |
-
-**Critical point:** The target is what you're predicting. You can use PAST values as lag features, but never future values.
-
-> **[Show warning box]**
-
-**LEAKAGE RISK:** When forecasting d_100, you can use d_1 through d_99 as features. You cannot use d_100 itself — that's what you're trying to predict.
-
----
-
-### A Note on Hierarchy
-
-> **[In the HTML: Scroll down within the sales card to see the warning boxes, or go back to the Overview tab and scroll to "M5 Data Hierarchy"]**
-
-> **[In the HTML: In the hierarchy diagram, notice the unique_id section has an orange "🔧 DERIVED — NOT IN RAW DATA" badge — this is the key field you must create yourself]**
-
-You might notice the hierarchy is embedded right in the sales data. You don't need a separate metadata file.
+> **[In the HTML: Scroll down to see the hierarchy diagrams]**
 
 **Product Hierarchy:**
 ```
@@ -161,183 +72,236 @@ State (3) → Store (10)
 
 **Combined:** 3,049 items × 10 stores = 30,490 unique item-store combinations.
 
-This hierarchy matters for two reasons:
-
-First, you can **aggregate** to any level. Don't want to forecast 30,000 series? Aggregate to department-store level and you have 70 series. Or category-state level for 9 series.
-
-Second, you can use **hierarchical reconciliation**. Forecast at multiple levels and ensure they're mathematically consistent. We'll cover this in later modules.
+> **[In the HTML: Click "Learn the vocabulary that makes this click" to continue]**
 
 ---
 
-### File 2: calendar.csv (Known-At-Time Features)
+## Tab 2: Vocabulary — The Four Classifications
 
-> **[In the HTML: Click the purple "calendar.csv" card]**
+> **[In the HTML: Click the "📚 Vocabulary" tab]**
 
-**Shape:** 1,969 rows × 14 columns (one row per day)
+Before we explore the files, you need to understand four terms. These classifications determine what you can safely use as features.
 
-This is your date reference table. **Every field here is safe to use for forecasting** because they're all known in advance.
+### The Four Types
 
-**Date identifiers:**
+> **[In the HTML: Look at the four classification cards]**
 
-| Column | Classification | Description |
-|--------|---------------|-------------|
-| `date` | Time Identifier | Date in YYYY-MM-DD format |
-| `d` | Time Identifier | Matches d_X columns in sales (d_1, d_2, etc.) |
-| `wm_yr_wk` | Time Grouping | Walmart week ID — use this to join prices |
+**✓ STATIC** — Never changes over time
+- Examples: item_id, store_id, dept_id, cat_id, state_id
+- Always safe to use as features
 
-**Calendar features (all known-at-time):**
+**📅 KNOWN-AT-TIME** — Changes over time, but known in advance
+- Examples: weekday, month, events, SNAP schedules
+- Safe because they come from calendars and schedules
 
-| Column | Classification | Description |
-|--------|---------------|-------------|
-| `weekday` | Known-At Feature | Day name (Saturday, Sunday, etc.) |
-| `wday` | Known-At Feature | Day number (1-7, starting Saturday) |
-| `month` | Known-At Feature | Month (1-12) |
-| `year` | Known-At Feature | Year |
+**⚠️ DYNAMIC (Unknown)** — Changes over time, NOT known at forecast time
+- Examples: sell_price, actual weather
+- High leakage risk — use lagged values only
 
-**Event features (all known-at-time):**
+**🎯 TARGET** — What you're predicting
+- Examples: daily sales (d_1, d_2, ... d_1941)
+- Can use past values as lag features, never future
 
-| Column | Classification | Description |
-|--------|---------------|-------------|
-| `event_name_1` | Known-At Feature | Primary event name (SuperBowl, Christmas, etc.) |
-| `event_type_1` | Known-At Feature | Event type (Sporting, Cultural, Religious, National) |
-| `event_name_2` | Known-At Feature | Secondary event name (some dates have 2 events) |
-| `event_type_2` | Known-At Feature | Secondary event type |
+### The Critical Question
 
-**SNAP features (all known-at-time):**
+> **[In the HTML: Read "The Critical Question" box]**
 
-| Column | Classification | Description |
-|--------|---------------|-------------|
-| `snap_CA` | Known-At Feature | SNAP eligible in California (0/1) |
-| `snap_TX` | Known-At Feature | SNAP eligible in Texas (0/1) |
-| `snap_WI` | Known-At Feature | SNAP eligible in Wisconsin (0/1) |
+Before using any feature, ask: **"Will I actually have this data when I need to make the forecast?"**
 
-> **[Emphasize this point]**
+If the answer is no — or even "maybe not" — you need to either lag the feature or exclude it.
 
-**Why are these "known-at-time"?** Because they come from calendars and government schedules. You know Christmas is December 25th. You know the SNAP schedule for next month. These are predetermined — not observed from actual sales data.
-
-**Important distinction:** You know the event NAME (SuperBowl is on February 7th). You do NOT know the event IMPACT (how much sales will spike). The event is known; its effect must be learned from historical data.
+> **[In the HTML: Click "Now let's see what's actually in each file" to continue]**
 
 ---
 
-### File 3: sell_prices.csv (THE LEAKAGE TRAP)
+## Tab 3: Explore — What's in Each File?
 
-> **[In the HTML: Click the orange "sell_prices.csv" card]**
+> **[In the HTML: Click the "🔍 Explore" tab]**
 
-This is where most people make mistakes. Notice the card says "DYNAMIC FEATURES (UNKNOWN)" — that's the warning sign.
+Now let's examine every field in each file. You'll see detailed tables with:
+- Field name and type
+- Classification (Static, Known-At-Time, Dynamic, Target)
+- Description and examples
+- Whether it's known at forecast time
+- Leakage risk level
+
+### sales_train.csv
+
+> **[In the HTML: Look at the sales_train.csv section]**
+
+**Shape:** 30,490 rows × 1,947 columns
+
+This file has two parts:
+1. **6 identifier/hierarchy columns** — All STATIC, always safe
+2. **1,941 daily sales columns (d_1 to d_1941)** — Your TARGET
+
+> **[In the HTML: Note the warnings about wide format and target leakage]**
+
+**Key insight:** The raw data is in WIDE format — each day is a column. This needs to be transformed to LONG format for forecasting.
+
+### calendar.csv
+
+> **[In the HTML: Scroll to the calendar.csv section]**
+
+**Shape:** 1,969 rows × 14 columns
+
+Everything here is safe! All fields are either date identifiers or known-at-time features.
+
+> **[In the HTML: Note the warning about wm_yr_wk being used for joining]**
+
+The `d` column maps to the d_X columns in sales_train. The `wm_yr_wk` column is how you join prices.
+
+### sell_prices.csv — THE LEAKAGE TRAP
+
+> **[In the HTML: Scroll to the sell_prices.csv section]**
 
 **Shape:** 6,841,121 rows × 4 columns
 
-| Column | Classification | Description |
-|--------|---------------|-------------|
-| `store_id` | Join Key | Store identifier |
-| `item_id` | Join Key | Product identifier |
-| `wm_yr_wk` | Join Key (Time-Varying) | Walmart week — join to calendar |
-| `sell_price` | **DYNAMIC (UNKNOWN)** | Weekly average price |
+> **[In the HTML: Note this file has the most warnings]**
 
-> **[Show the critical warning]**
-
-**THE CRITICAL LEAKAGE RISK:**
-
-Prices are DYNAMIC. They change week to week. And critically — **you do NOT know next week's actual price when making a forecast**.
-
-Think about it: when you're forecasting next week's sales, what price will you use? You don't have next week's actual price yet. It hasn't happened.
+This is where most people make mistakes. Prices change week to week, and **you do NOT know next week's actual price when making a forecast**.
 
 **Common mistake:**
 ```python
 # ❌ WRONG: Joining future prices
 df = df.merge(prices, on=['item_id', 'store_id', 'wm_yr_wk'])
-# This gives you next week's actual price to predict next week's sales
-# That's leakage!
 ```
 
-**What you CAN do instead:**
+This gives you next week's actual price to predict next week's sales. That's leakage!
 
-1. **Use lagged prices:** Last week's price as a feature
-2. **Use planned prices:** If you have a promotional calendar with planned prices
-3. **Forecast prices separately:** Build a price prediction model
+**What you CAN do:**
+1. Use lagged prices (last week's price)
+2. Use planned promotional prices
+3. Forecast prices separately
 
-> **[Show leakage scenario]**
-
-**Why does this destroy your model?**
-
-In backtesting, you JOIN prices by date. For historical dates, you have the actual price — so the model learns "when price drops, sales spike." Looks great!
-
-In production, you're forecasting next week. You don't have next week's actual price. You have to guess. Now your model breaks because it's missing the feature it relied on most.
-
-This is why leakage causes "perfect scores in notebooks, total failure in production."
+> **[In the HTML: Click "You understand the data. Now let's transform it" to continue]**
 
 ---
 
-## The 5Q Classification Summary
+## Tab 4: Transform — From Raw to Forecast-Ready
 
-> **[In the HTML: Click the "💡 Key Concepts" tab]**
+> **[In the HTML: Click the "🛠️ Transform" tab]**
 
-Let's tie this back to our 5Q Framework. This tab shows you the five core concepts you need to internalize.
+Now you understand the raw structure. Here's how TSForge transforms it.
 
-> **[In the HTML: Look at the purple "Core Concepts" banner at the top]**
+### The One-Line Solution
 
-| Field Type | 5Q Connection | M5 Examples | Safe to Use? |
-|------------|---------------|-------------|--------------|
-| **Static** | Q3 (Structure) | item_id, store_id, dept_id, cat_id, state_id | ✓ Always |
-| **Known-At-Time** | Q4 (Drivers) | weekday, month, events, SNAP | ✓ Always |
-| **Target** | Q1 (Target) | d_1...d_1941 (sales) | ✓ Past only |
-| **Dynamic Unknown** | Q4 (Drivers) | sell_price | ⚠ Lagged only |
+> **[In the HTML: Look at the TSForge callout box at the top]**
 
-> **[In the HTML: Scroll down in the Concepts tab to see the five concept cards — STATIC, DYNAMIC, KNOWN-AT-TIME, TARGET, and DATA LEAKAGE]**
+```python
+from tsforge.data import load_m5
 
-Each card shows the definition, M5 examples, usage guidance, and watch-outs. Take time to read through each one.
+df = load_m5()
+```
 
-The critical question for any feature: **"Will I actually have this data when I need to make the forecast?"**
+That's it. One line. But what does it actually do?
 
-> **[In the HTML: Scroll down to see "The Leakage Trap" red warning box — read this carefully]**
+### What load_m5() Handles
 
-> **[In the HTML: Click the "📋 Cheat Sheet" tab for a complete column reference]**
+> **[In the HTML: Read the list of what load_m5() does]**
 
-The cheat sheet gives you every single column in M5, classified by type. Bookmark this — you'll refer back to it when building features.
+1. **Creates unique_id** — Combines item_id + store_id
+2. **Melts wide → long** — Converts d_X columns to rows
+3. **Joins calendar** — Maps d_X to actual dates
+4. **Renames to y** — Standard target column name
+5. **Preserves static features** — Keeps hierarchy columns
+
+### The Interactive Schema Mapping
+
+> **[In the HTML: Hover over fields in the transformation visualizer]**
+
+Try hovering over fields on the left (raw) or right (transformed) side. You'll see how each raw field maps to the output schema.
+
+**Raw M5 Fields → TSForge Transformed Schema**
+
+| Raw Field | → | Transformed Field |
+|-----------|---|-------------------|
+| item_id + store_id | → | unique_id |
+| d_X columns + calendar.date | → | ds |
+| d_X values | → | y |
+| dept_id, cat_id, state_id | → | (preserved as static features) |
+
+### Before and After
+
+> **[In the HTML: Look at the Before/After data tables]**
+
+**BEFORE (Wide format):**
+- 30,490 rows × 1,947 columns
+- Each row is one item-store
+- Days are columns (d_1, d_2, d_3, ...)
+
+**AFTER (Long format):**
+- 59,181,490 rows × ~6 columns
+- Each row is one observation
+- Standard schema: unique_id, ds, y
+
+> **[In the HTML: Click "Use the cheat sheet to validate your work" to continue]**
 
 ---
 
-## What TSForge Does For You
+## Tab 5: Cheat Sheet — Your Go-To Reference
 
-> **[Show what the helper handles]**
+> **[In the HTML: Click the "🚀 Cheat Sheet" tab]**
 
-Now you understand what's in the raw M5 data. Here's what `tsf.load_m5()` does automatically:
+This is your reference page. Bookmark it.
 
-1. **Downloads** the data from datasetsforecast (or uses cache)
-2. **Reshapes** from wide (d_X columns) to long (unique_id, ds, y)
-3. **Creates** unique_id from item_id + store_id
-4. **Converts** d_X column names to actual dates
-5. **Optionally expands** hierarchy columns with `include_hierarchy=True`
+### Complete M5 Column Reference
 
-In Module 1.8, we'll show how to merge calendar and price features while avoiding leakage. But first, you needed to understand what each field represents and why some are dangerous.
+> **[In the HTML: Look at the four column classification boxes]**
+
+Every single column in M5 is classified here:
+
+- **STATIC (5 total):** item_id, dept_id, cat_id, store_id, state_id
+- **KNOWN-AT-TIME (11 total):** date, wday, weekday, month, year, event_*, snap_*
+- **DYNAMIC Unknown (2 total):** sell_price, wm_yr_wk
+- **TARGET (1,941 total):** d_1 through d_1941
+
+### Decision Tree: Can I Use This Column?
+
+> **[In the HTML: Look at the three decision cards]**
+
+**✅ YES — Use it directly**
+- Any STATIC column
+- Any KNOWN-AT-TIME column from calendar.csv
+- Date-derived features (weekday, month, year)
+
+**⚠️ MAYBE — Use with care**
+- sell_price — Use LAGGED values or PLANNED prices only
+- wm_yr_wk — Only for joining; validate temporal ordering
+- d_X (past values) — Can create LAG features, verify temporal split
+
+**❌ NO — Do not use**
+- sell_price for FUTURE weeks
+- d_X where X ≥ forecast date
+- Any value requiring "peeking" into the future
+
+### Common Leakage Patterns to Avoid
+
+> **[In the HTML: Look at the code examples]**
+
+The cheat sheet shows four patterns:
+1. ❌ Joining prices without time constraint
+2. ❌ Using current period sales as feature
+3. ❌ Rolling window with center=True
+4. ✅ Correct lag feature creation with shift()
 
 ---
 
 ## Key Takeaways
 
-> **[Summary slide — or revisit each HTML tab as you summarize]**
+> **[Summary slide]**
 
-**The HTML explorer has four tabs — here's what each covers:**
-- **📖 Overview:** The three files, hierarchy diagram, why this matters
-- **📊 Tables:** Click each file card to see every field classified
-- **💡 Key Concepts:** The five classifications (Static, Dynamic, Known-At-Time, Target, Leakage)
-- **📋 Cheat Sheet:** Complete column reference — bookmark this
-
-**Three files, three roles:**
-- `sales_train.csv` — Target + static hierarchy
-- `calendar.csv` — Known-at-time features (safe)
-- `sell_prices.csv` — Dynamic features (leakage risk)
+**The five tabs tell a story:**
+- **📊 Raw Data** — The 3 files as downloaded from Kaggle (wide format, d_X columns)
+- **📚 Vocabulary** — Static, Known-At-Time, Dynamic, Target
+- **🔍 Explore** — Every field classified with leakage warnings
+- **🛠️ Transform** — How load_m5() converts to forecast-ready format
+- **🚀 Cheat Sheet** — Complete reference + decision tree
 
 **The format transformation:**
-- Raw M5: Wide format with d_X columns
-- TSForge/Nixtla: Long format with (unique_id, ds, y)
-- Helper functions handle this automatically
-
-**The classification framework:**
-- STATIC: Never changes — always safe
-- KNOWN-AT-TIME: From calendars/schedules — always safe
-- TARGET: What you predict — use past values only
-- DYNAMIC UNKNOWN: Changes over time, not known ahead — use lags only
+- Raw: Wide format (30,490 rows × 1,947 columns)
+- Transformed: Long format (59M rows × 6 columns)
+- Schema: (unique_id, ds, y) + static features
 
 **The critical question:**
 > "Will I actually have this data when I need to make the forecast?"
