@@ -5,24 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Module 1.7: Understanding the M5 Dataset</title>
     
-    <!-- React and ReactDOM from CDN -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Babel Standalone for JSX transformation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-                sans-serif;
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
     </style>
 </head>
@@ -32,1231 +25,1090 @@
     <script type="text/babel">
         const { useState } = React;
 
-        // Lucide React icons as inline SVGs
-        const ChevronDown = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>;
-        const ChevronRight = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
+        // Color palette
+        const colors = {
+          primary: '#2596be',
+          dark: '#1d1f56',
+          accent: '#2d42a7',
+          purple: '#3a2f7e',
+          light: '#53b4e6',
+          gray: '#8b8b8b',
+          danger: '#c41e3a',
+          success: '#06A77D'
+        };
+
+        // Icons
+        const ChevronRight = ({ className }) => <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
         const AlertTriangle = ({ className }) => <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
         const CheckCircle = ({ className }) => <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
-        const Info = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
         const Database = ({ className }) => <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>;
         const Calendar = ({ className }) => <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
         const DollarSign = ({ className }) => <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
-        const Package = ({ className }) => <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>;
+        const ArrowRight = ({ className }) => <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
 
-        const M5DatasetExplorer = () => {
-          const [selectedTable, setSelectedTable] = useState(null);
-          const [expandedSection, setExpandedSection] = useState('overview');
+        // Tab configuration
+        const tabs = [
+          { id: 'raw', icon: '📊', label: 'Raw Data', question: 'The M5 Data Structure: 3 files, 1 dataset' },
+          { id: 'vocabulary', icon: '📚', label: 'Vocabulary', question: 'What do these terms mean?' },
+          { id: 'explore', icon: '🔍', label: 'Explore', question: "What's in each file?" },
+          { id: 'transform', icon: '🛠️', label: 'Transform', question: 'How do I make this forecast-ready?' },
+          { id: 'cheatsheet', icon: '🚀', label: 'Cheat Sheet', question: 'Your go-to reference' }
+        ];
 
-          const tables = {
-            sales: {
-              name: 'sales_train.csv',
-              role: 'TARGET + STATIC IDENTIFIERS',
-              color: '#2596be',
-              icon: <Database className="w-8 h-8" />,
-              description: 'Historical daily unit sales data per product and store',
-              shape: '30,490 rows × 1,947 columns (6 identifiers + 1,941 daily sales)',
-              keyPoint: 'Each row = one item-store combination. Columns d_1...d_1941 are daily unit sales starting from 2011-01-29.',
-              fields: [
-                {
-                  name: 'item_id',
-                  type: 'static',
-                  classification: 'STATIC IDENTIFIER',
-                  desc: 'The id of the product (3,049 unique items)',
-                  knownAt: 'Always',
-                  leakage: 'No risk',
-                  example: 'FOODS_3_090'
-                },
-                {
-                  name: 'dept_id',
-                  type: 'static',
-                  classification: 'STATIC FEATURE',
-                  desc: 'The id of the department the product belongs to (7 departments)',
-                  knownAt: 'Always',
-                  leakage: 'No risk',
-                  example: 'FOODS_3'
-                },
-                {
-                  name: 'cat_id',
-                  type: 'static',
-                  classification: 'STATIC FEATURE',
-                  desc: 'The id of the category the product belongs to (FOODS, HOBBIES, HOUSEHOLD)',
-                  knownAt: 'Always',
-                  leakage: 'No risk',
-                  example: 'FOODS'
-                },
-                {
-                  name: 'store_id',
-                  type: 'static',
-                  classification: 'STATIC IDENTIFIER',
-                  desc: 'The id of the store where the product is sold (10 stores)',
-                  knownAt: 'Always',
-                  leakage: 'No risk',
-                  example: 'CA_3'
-                },
-                {
-                  name: 'state_id',
-                  type: 'static',
-                  classification: 'STATIC FEATURE',
-                  desc: 'The State where the store is located (CA, TX, WI)',
-                  knownAt: 'Always',
-                  leakage: 'No risk',
-                  example: 'CA'
-                },
-                {
-                  name: 'd_1, d_2, ..., d_1941',
-                  type: 'target',
-                  classification: 'TARGET VARIABLE',
-                  desc: 'The number of units sold at day i, starting from 2011-01-29. Each column represents one day.',
-                  knownAt: 'Only up to forecast date',
-                  leakage: 'HIGH RISK - Never use future sales as features',
-                  example: 'd_1=3, d_2=0, d_3=5'
-                }
-              ],
-              warnings: [
-                {
-                  title: 'Wide Format Alert',
-                  content: 'This data comes in WIDE format (days as columns). You MUST reshape to LONG format for modeling: (unique_id, ds, y). The unique_id should combine item_id + store_id.'
-                },
-                {
-                  title: 'Target Column Leakage',
-                  content: 'When forecasting d_1900, you can only use d_1...d_1899 as features. Never include future days in training. The target is what you\'re trying to predict, not what you can use as input.'
-                },
-                {
-                  title: 'No Explicit ID Column',
-                  content: 'Unlike some datasets, there\'s no single "id" column. You must create unique_id by combining item_id and store_id (e.g., "FOODS_3_090_CA_3").'
-                }
-              ]
-            },
-            calendar: {
-              name: 'calendar.csv',
-              role: 'KNOWN-AT-TIME FEATURES',
-              color: '#3a2f7e',
-              icon: <Calendar className="w-8 h-8" />,
-              description: 'Information about the dates the products are sold',
-              shape: '1,969 rows × 14 columns (one row per day, covering the full date range)',
-              keyPoint: 'This is your master date table. Join to sales data via the date or d_X identifier.',
-              fields: [
-                {
-                  name: 'date',
-                  type: 'dynamic',
-                  classification: 'TIME IDENTIFIER',
-                  desc: 'The date in "y-m-d" format',
-                  knownAt: 'Always (future dates are known)',
-                  leakage: 'No risk',
-                  example: '2011-01-29'
-                },
-                {
-                  name: 'wm_yr_wk',
-                  type: 'dynamic',
-                  classification: 'TIME GROUPING',
-                  desc: 'The id of the week the date belongs to (used for price joins)',
-                  knownAt: 'Always',
-                  leakage: 'No risk',
-                  example: '11101'
-                },
-                {
-                  name: 'weekday',
-                  type: 'dynamic',
-                  classification: 'KNOWN-AT FEATURE',
-                  desc: 'The type of the day (Saturday, Sunday, ..., Friday)',
-                  knownAt: 'Always (derived from date)',
-                  leakage: 'No risk',
-                  example: 'Saturday'
-                },
-                {
-                  name: 'wday',
-                  type: 'dynamic',
-                  classification: 'KNOWN-AT FEATURE',
-                  desc: 'The id of the weekday, starting from Saturday',
-                  knownAt: 'Always (derived from date)',
-                  leakage: 'No risk',
-                  example: '1'
-                },
-                {
-                  name: 'month',
-                  type: 'dynamic',
-                  classification: 'KNOWN-AT FEATURE',
-                  desc: 'The month of the date',
-                  knownAt: 'Always (derived from date)',
-                  leakage: 'No risk',
-                  example: '1'
-                },
-                {
-                  name: 'year',
-                  type: 'dynamic',
-                  classification: 'KNOWN-AT FEATURE',
-                  desc: 'The year of the date',
-                  knownAt: 'Always (derived from date)',
-                  leakage: 'No risk',
-                  example: '2011'
-                },
-                {
-                  name: 'event_name_1',
-                  type: 'dynamic',
-                  classification: 'KNOWN-AT FEATURE',
-                  desc: 'If the date includes an event, the name of this event (e.g., SuperBowl, Christmas)',
-                  knownAt: 'Known in advance (official calendar)',
-                  leakage: 'No risk - event names are predetermined',
-                  example: 'SuperBowl'
-                },
-                {
-                  name: 'event_type_1',
-                  type: 'dynamic',
-                  classification: 'KNOWN-AT FEATURE',
-                  desc: 'If the date includes an event, the type of this event (Cultural, National, Religious, Sporting)',
-                  knownAt: 'Known in advance',
-                  leakage: 'No risk',
-                  example: 'Sporting'
-                },
-                {
-                  name: 'event_name_2',
-                  type: 'dynamic',
-                  classification: 'KNOWN-AT FEATURE',
-                  desc: 'If the date includes a second event, the name of this event',
-                  knownAt: 'Known in advance (official calendar)',
-                  leakage: 'No risk',
-                  example: 'Valentine\'s Day'
-                },
-                {
-                  name: 'event_type_2',
-                  type: 'dynamic',
-                  classification: 'KNOWN-AT FEATURE',
-                  desc: 'If the date includes a second event, the type of this event',
-                  knownAt: 'Known in advance',
-                  leakage: 'No risk',
-                  example: 'Cultural'
-                },
-                {
-                  name: 'snap_CA',
-                  type: 'dynamic',
-                  classification: 'KNOWN-AT FEATURE',
-                  desc: 'Binary variable (0 or 1) indicating whether CA stores allow SNAP purchases on this date',
-                  knownAt: 'Known in advance (government calendar)',
-                  leakage: 'No risk - SNAP schedules are predetermined',
-                  example: '1'
-                },
-                {
-                  name: 'snap_TX',
-                  type: 'dynamic',
-                  classification: 'KNOWN-AT FEATURE',
-                  desc: 'Binary variable (0 or 1) indicating whether TX stores allow SNAP purchases on this date',
-                  knownAt: 'Known in advance (government calendar)',
-                  leakage: 'No risk',
-                  example: '0'
-                },
-                {
-                  name: 'snap_WI',
-                  type: 'dynamic',
-                  classification: 'KNOWN-AT FEATURE',
-                  desc: 'Binary variable (0 or 1) indicating whether WI stores allow SNAP purchases on this date',
-                  knownAt: 'Known in advance (government calendar)',
-                  leakage: 'No risk',
-                  example: '1'
-                }
-              ],
-              warnings: [
-                {
-                  title: 'All Calendar Features Are Known-At-Time',
-                  content: 'Every field in this table is either derived from the date itself (weekday, month, year) or comes from official calendars (events, SNAP schedules). These are ALL safe to use for forecasting because they\'re known in advance.'
-                },
-                {
-                  title: 'Event Name ≠ Event Impact',
-                  content: 'While event NAMES are known (we know when SuperBowl happens), the event IMPACT on sales is NOT. Don\'t use realized sales from past SuperBowls directly - model the pattern instead.'
-                },
-                {
-                  title: 'Multiple Events Per Day',
-                  content: 'Some dates have TWO events (event_name_1 and event_name_2). Make sure your features account for this - you might need to combine them or create separate indicators.'
-                }
-              ]
-            },
-            prices: {
-              name: 'sell_prices.csv',
-              role: 'DYNAMIC FEATURES (UNKNOWN)',
-              color: '#2d42a7',
-              icon: <DollarSign className="w-8 h-8" />,
-              description: 'Information about the price of products sold per store and date',
-              shape: '6,841,121 rows × 4 columns (not all item-store-week combinations present)',
-              keyPoint: 'Prices change weekly. Join via [store_id + item_id + wm_yr_wk]. CRITICAL: Watch for leakage!',
-              fields: [
-                {
-                  name: 'store_id',
-                  type: 'static',
-                  classification: 'JOIN KEY',
-                  desc: 'The id of the store where the product is sold',
-                  knownAt: 'Always',
-                  leakage: 'No risk',
-                  example: 'CA_1'
-                },
-                {
-                  name: 'item_id',
-                  type: 'static',
-                  classification: 'JOIN KEY',
-                  desc: 'The id of the product',
-                  knownAt: 'Always',
-                  leakage: 'No risk',
-                  example: 'FOODS_3_090'
-                },
-                {
-                  name: 'wm_yr_wk',
-                  type: 'dynamic',
-                  classification: 'JOIN KEY (TIME-VARYING)',
-                  desc: 'The id of the week. Use this to join with calendar.csv to get the date range.',
-                  knownAt: 'Depends on forecast date',
-                  leakage: 'CRITICAL - Must validate date availability',
-                  example: '11101'
-                },
-                {
-                  name: 'sell_price',
-                  type: 'dynamic',
-                  classification: 'DYNAMIC FEATURE',
-                  desc: 'The price of the product for the given week/store (average across seven days). If not available, the product was not sold during that week.',
-                  knownAt: 'UNKNOWN for future weeks',
-                  leakage: 'HIGH RISK - Cannot use future realized prices',
-                  example: '1.97'
-                }
-              ],
-              warnings: [
-                {
-                  title: 'THE CRITICAL LEAKAGE RISK',
-                  content: 'Prices are DYNAMIC and UNKNOWN at forecast time. You CANNOT use next week\'s actual realized price to forecast next week\'s sales. Instead, use: (1) PLANNED promotional prices from merchandising calendars, (2) LAGGED prices (last week\'s price), or (3) FORECASTED prices from a separate price prediction model.'
-                },
-                {
-                  title: 'Weekly Granularity, Daily Sales',
-                  content: 'Prices are provided per week (constant for 7 days), but sales are daily. When you join prices to daily sales data, each day in a week gets the same price. This is correct - prices don\'t change mid-week in this dataset.'
-                },
-                {
-                  title: 'Missing Prices Mean Something',
-                  content: 'If sell_price is missing for a specific [store_id + item_id + wm_yr_wk], it means the product was NOT sold during that week at that store. This is informative! Consider encoding this as a separate feature (e.g., "product_available").'
-                },
-                {
-                  title: 'Prices Change Over Time',
-                  content: 'The same item at the same store can have different prices in different weeks (both in training and test periods). Price changes might be: (1) seasonal adjustments, (2) clearance sales, (3) promotional periods, or (4) permanent price changes.'
-                }
-              ]
-            }
-          };
-
-          const conceptCards = [
-            {
-              id: 'static',
-              title: 'STATIC Features',
-              color: '#53b4e6',
-              icon: <CheckCircle className="w-6 h-6" />,
-              definition: 'Attributes that NEVER change over time for a given entity.',
-              examples: [
-                'item_id',
-                'dept_id', 
-                'cat_id',
-                'store_id',
-                'state_id'
-              ],
-              usage: 'Can be joined to any date without leakage risk.',
-              watch: 'Be careful: some things you think are static might actually change (e.g., store square footage after renovations). In M5, these identifiers are truly static.'
-            },
-            {
-              id: 'dynamic',
-              title: 'DYNAMIC Features',
-              color: '#2d42a7',
-              icon: <AlertTriangle className="w-6 h-6" />,
-              definition: 'Features that change over time. May or may not be known at forecast time.',
-              examples: [
-                'sell_price',
-                'wm_yr_wk'
-              ],
-              usage: 'MUST verify availability at forecast time. Often requires lags or external plans.',
-              watch: 'This is where most leakage happens. Always ask: "Will I know this value when making the forecast?" For M5, sell_price is the critical dynamic feature that is UNKNOWN at forecast time.'
-            },
-            {
-              id: 'known-at',
-              title: 'KNOWN-AT-TIME',
-              color: '#3a2f7e',
-              icon: <Calendar className="w-6 h-6" />,
-              definition: 'Dynamic features that are known in advance (e.g., from a calendar or schedule).',
-              examples: [
-                'date',
-                'wday',
-                'weekday',
-                'month',
-                'year',
-                'event_name_1',
-                'event_type_1',
-                'event_name_2',
-                'event_type_2',
-                'snap_CA',
-                'snap_TX',
-                'snap_WI'
-              ],
-              usage: 'Safe to use for future forecasts because they exist on a predetermined schedule.',
-              watch: 'Known EVENT ≠ Known IMPACT. You know Christmas is coming, but not how much it will boost sales. All calendar.csv fields (except wm_yr_wk used for joining) fall into this category.'
-            },
-            {
-              id: 'target',
-              title: 'TARGET Variable',
-              color: '#1d1f56',
-              icon: <AlertTriangle className="w-6 h-6" />,
-              definition: 'The variable you are trying to predict. Must NEVER be used as a feature for the same time period.',
-              examples: [
-                'd_1',
-                'd_2',
-                '... (all d_X columns)',
-                'd_1941'
-              ],
-              usage: 'This is what you\'re forecasting. Can use PAST values as lags, but never future or current values.',
-              watch: 'The #1 leakage mistake: using d_100 to predict d_100. You can use d_1...d_99 to predict d_100, but not the value you\'re trying to forecast. Create lag features carefully.'
-            },
-            {
-              id: 'leakage',
-              title: 'DATA LEAKAGE',
-              color: '#c41e3a',
-              icon: <AlertTriangle className="w-6 h-6" />,
-              definition: 'Using information in training that would not be available at forecast time. This destroys model validity.',
-              examples: [
-                'Using future sell_price',
-                'Using future d_X sales',
-                'Using wm_yr_wk from the future',
-                'Not properly lagging features'
-              ],
-              usage: 'PREVENT by asking: "Will I actually know this value when I make the forecast in production?"',
-              watch: 'Leakage causes perfect validation scores but 100% failure in production. It\'s invisible in metrics but deadly in deployment. Always validate temporal ordering of your features.'
-            }
-          ];
-
-          const TableCard = ({ id, table }) => (
-            <div
-              onClick={() => setSelectedTable(id)}
-              className={`cursor-pointer transition-all duration-300 bg-white rounded-xl p-6 border-4 hover:shadow-xl hover:-translate-y-1 ${
-                selectedTable === id ? 'ring-4 ring-opacity-50' : ''
-              }`}
-              style={{ 
-                borderColor: table.color,
-                ...(selectedTable === id && { '--tw-ring-color': table.color })
-              }}
-            >
-              <div style={{ color: table.color }} className="mb-3">
-                {table.icon}
-              </div>
-              <div className="text-xs font-bold text-gray-500 tracking-wider mb-1">
-                {table.role}
-              </div>
-              <div className="text-xl font-bold mb-2" style={{ color: table.color }}>
-                {table.name}
-              </div>
-              <div className="text-sm text-gray-600 mb-4">
-                {table.description}
-              </div>
-              <div className="text-xs bg-gray-100 rounded-lg px-3 py-2 font-mono">
-                {table.shape}
-              </div>
-            </div>
-          );
-
-          const FieldBadge = ({ type }) => {
-            const styles = {
-              static: { bg: '#53b4e6', text: 'STATIC' },
-              dynamic: { bg: '#2d42a7', text: 'DYNAMIC' },
-              target: { bg: '#1d1f56', text: 'TARGET' }
-            };
-            const style = styles[type] || styles.static;
-            
-            return (
-              <span
-                className="text-xs font-bold px-2 py-1 rounded-full text-white"
-                style={{ backgroundColor: style.bg }}
-              >
-                {style.text}
-              </span>
-            );
-          };
-
-          const ConceptCard = ({ concept }) => (
-            <div
-              className="bg-white rounded-xl p-6 border-l-8 shadow-lg"
-              style={{ borderColor: concept.color }}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div style={{ color: concept.color }}>
-                  {concept.icon}
-                </div>
-                <h3 className="text-xl font-bold" style={{ color: concept.color }}>
-                  {concept.title}
-                </h3>
-              </div>
-              
-              <div className="space-y-3 text-sm">
-                <div>
-                  <div className="font-bold text-gray-700 mb-1">Definition:</div>
-                  <div className="text-gray-600">{concept.definition}</div>
-                </div>
-                
-                <div>
-                  <div className="font-bold text-gray-700 mb-1">
-                    {concept.id === 'target' ? 'Target Columns in M5:' : 'M5 Columns in this Category:'}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {concept.examples.map((ex, i) => (
-                      <code 
-                        key={i} 
-                        className="px-2 py-1 rounded text-xs font-semibold"
-                        style={{ 
-                          backgroundColor: `${concept.color}20`,
-                          color: concept.color,
-                          border: `1px solid ${concept.color}40`
-                        }}
-                      >
-                        {ex}
-                      </code>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="font-bold text-gray-700 mb-1">Usage:</div>
-                  <div className="text-gray-600">{concept.usage}</div>
-                </div>
-                
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
-                  <div className="font-bold text-yellow-800 text-xs mb-1">⚠️ Watch Out:</div>
-                  <div className="text-yellow-700 text-xs">{concept.watch}</div>
-                </div>
-              </div>
-            </div>
-          );
-
-          // Color palette
-          const colors = {
-            primary: '#2596be',      // Bright blue
-            dark: '#1d1f56',         // Dark navy
-            accent: '#2d42a7',       // Royal blue
-            purple: '#3a2f7e',       // Deep purple
-            light: '#53b4e6',        // Light blue
-            gray: '#8b8b8b'          // Gray
-          };
-
+        // Simplified Journey Progress Header (no start/goal tables)
+        const JourneyHeader = ({ activeTab, setActiveTab }) => {
+          const activeIndex = tabs.findIndex(t => t.id === activeTab);
+          
           return (
-            <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-6">
-              <div className="max-w-7xl mx-auto">
-                {/* Header */}
+            <div className="bg-white rounded-xl p-6 mb-6 shadow-lg border-2 border-gray-100">
+              {/* Progress Bar */}
+              <div className="relative">
+                <div className="absolute top-4 left-0 right-0 h-1 bg-gray-200 rounded"></div>
                 <div 
-                  className="rounded-2xl p-8 text-white mb-8 shadow-xl"
-                  style={{ background: `linear-gradient(135deg, ${colors.dark} 0%, ${colors.purple} 25%, ${colors.accent} 50%, ${colors.primary} 75%, ${colors.light} 100%)` }}
-                >
-                  <h1 className="text-4xl font-bold mb-6">Module 1.7: Understanding the M5 Dataset</h1>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                    <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                      <div className="font-bold mb-1">① Understand Files</div>
-                      <div className="text-xs opacity-90">Learn the three M5 files and their roles</div>
-                    </div>
-                    <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                      <div className="font-bold mb-1">② Classify Fields</div>
-                      <div className="text-xs opacity-90">Tag as static, dynamic, or target</div>
-                    </div>
-                    <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                      <div className="font-bold mb-1">③ Check Known-At-Time</div>
-                      <div className="text-xs opacity-90">Validate feature availability at forecast time</div>
-                    </div>
-                    <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                      <div className="font-bold mb-1">④ Prevent Leakage</div>
-                      <div className="text-xs opacity-90">Never use future information to predict the future</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Navigation Tabs */}
-                <div className="flex gap-2 mb-6 flex-wrap">
-                  {['overview', 'tables', 'concepts', 'cheatsheet'].map(section => (
-                    <button
-                      key={section}
-                      onClick={() => setExpandedSection(section)}
-                      className="px-6 py-3 rounded-lg font-semibold transition-all"
-                      style={{
-                        backgroundColor: expandedSection === section ? colors.accent : 'white',
-                        color: expandedSection === section ? 'white' : colors.gray,
-                        boxShadow: expandedSection === section ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none'
-                      }}
-                    >
-                      {section === 'overview' && '📖 Overview'}
-                      {section === 'tables' && '📊 Tables'}
-                      {section === 'concepts' && '💡 Key Concepts'}
-                      {section === 'cheatsheet' && '📋 Cheat Sheet'}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Overview Section */}
-                {expandedSection === 'overview' && (
-                  <div className="space-y-6">
-                    <div className="bg-white rounded-xl p-8 shadow-lg">
-                      <h2 className="text-2xl font-bold text-gray-800 mb-4">The M5 Dataset Structure</h2>
-                      <p className="text-gray-700 mb-4">
-                        The M5 dataset comes from Walmart and contains daily sales data for thousands of items across 
-                        multiple stores. It's split into several files, each serving a specific role in the forecasting pipeline.
-                      </p>
-                      
-                      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
-                        <div className="font-bold text-blue-800 mb-2">Why This Matters</div>
-                        <div className="text-blue-700 text-sm">
-                          Understanding how these tables connect and what each field represents is not just academic - 
-                          it's the difference between a model that works in notebooks and one that survives production. 
-                          Most forecasting failures happen at the data preparation stage, not the modeling stage.
-                        </div>
-                      </div>
-
-                      <h3 className="text-xl font-bold text-gray-800 mt-6 mb-3">The Three Files</h3>
-                      <div className="space-y-3">
-                        <div className="flex gap-4 items-start">
-                          <div className="bg-blue-100 p-2 rounded">
-                            <Database className="w-6 h-6 text-blue-600" />
-                          </div>
-                          <div>
-                            <div className="font-bold text-gray-800">sales_train.csv</div>
-                            <div className="text-sm text-gray-600">
-                              Historical daily unit sales per product and store (the TARGET). 30,490 item-store combinations × 1,941 days starting from 2011-01-29. Contains hierarchical identifiers (item_id, dept_id, cat_id, store_id, state_id).
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-4 items-start">
-                          <div className="bg-purple-100 p-2 rounded">
-                            <Calendar className="w-6 h-6 text-purple-600" />
-                          </div>
-                          <div>
-                            <div className="font-bold text-gray-800">calendar.csv</div>
-                            <div className="text-sm text-gray-600">
-                              Information about the dates products are sold. Contains date attributes (weekday, month, year), events (up to 2 events per day), and SNAP eligibility by state. 1,969 rows (one per day).
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-4 items-start">
-                          <div className="bg-orange-100 p-2 rounded">
-                            <DollarSign className="w-6 h-6 text-orange-600" />
-                          </div>
-                          <div>
-                            <div className="font-bold text-gray-800">sell_prices.csv</div>
-                            <div className="text-sm text-gray-600">
-                              Information about product prices per store and week. Weekly pricing data (constant for 7 days). 6.8M rows. CRITICAL: prices are dynamic and unknown at forecast time.
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mt-6">
-                        <div className="font-bold text-blue-800 mb-2">💡 Note on Hierarchical Data</div>
-                        <div className="text-blue-700 text-sm">
-                          The sales_train.csv file includes built-in hierarchical identifiers (item_id → dept_id → cat_id and store_id → state_id). 
-                          You don't need a separate metadata file - the hierarchy is already embedded in the sales data.
-                        </div>
-                      </div>
-
-                      {/* Hierarchy Visualization */}
-                      <div className="bg-white rounded-xl p-8 shadow-lg mt-8 border-2 border-gray-200">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-6">🏗️ M5 Data Hierarchy</h3>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                          {/* Product Hierarchy */}
-                          <div>
-                            <div className="text-center mb-4">
-                              <div className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold text-lg shadow-lg">
-                                Product Hierarchy
-                              </div>
-                            </div>
-                            
-                            <div className="space-y-3">
-                              <div className="flex flex-col items-center">
-                                <div className="bg-indigo-100 border-3 border-indigo-400 rounded-lg p-4 w-full text-center">
-                                  <div className="text-xs font-bold text-indigo-600 mb-1">LEVEL 1: CATEGORY</div>
-                                  <code className="text-sm font-bold text-indigo-900">cat_id</code>
-                                  <div className="text-xs text-indigo-700 mt-1">3 categories total</div>
-                                </div>
-                                <div className="w-1 h-6 bg-indigo-300"></div>
-                              </div>
-                              
-                              <div className="flex flex-col items-center">
-                                <div className="bg-indigo-100 border-3 border-indigo-400 rounded-lg p-4 w-full text-center">
-                                  <div className="text-xs font-bold text-indigo-600 mb-1">LEVEL 2: DEPARTMENT</div>
-                                  <code className="text-sm font-bold text-indigo-900">dept_id</code>
-                                  <div className="text-xs text-indigo-700 mt-1">7 departments total</div>
-                                </div>
-                                <div className="w-1 h-6 bg-indigo-300"></div>
-                              </div>
-                              
-                              <div className="flex flex-col items-center">
-                                <div className="bg-indigo-100 border-3 border-indigo-400 rounded-lg p-4 w-full text-center">
-                                  <div className="text-xs font-bold text-indigo-600 mb-1">LEVEL 3: ITEM</div>
-                                  <code className="text-sm font-bold text-indigo-900">item_id</code>
-                                  <div className="text-xs text-indigo-700 mt-1">3,049 items total</div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-4 bg-indigo-50 rounded-lg p-3 text-xs text-indigo-800">
-                              <strong>Example:</strong><br/>
-                              FOODS → FOODS_3 → FOODS_3_090<br/>
-                              <span className="text-indigo-600">(Category → Department → Item)</span>
-                            </div>
-                          </div>
-                          
-                          {/* Location Hierarchy */}
-                          <div>
-                            <div className="text-center mb-4">
-                              <div className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-bold text-lg shadow-lg">
-                                Location Hierarchy
-                              </div>
-                            </div>
-                            
-                            <div className="space-y-3">
-                              <div className="flex flex-col items-center">
-                                <div className="bg-green-100 border-3 border-green-400 rounded-lg p-4 w-full text-center">
-                                  <div className="text-xs font-bold text-green-600 mb-1">LEVEL 1: STATE</div>
-                                  <code className="text-sm font-bold text-green-900">state_id</code>
-                                  <div className="text-xs text-green-700 mt-1">3 states: CA, TX, WI</div>
-                                </div>
-                                <div className="w-1 h-6 bg-green-300"></div>
-                              </div>
-                              
-                              <div className="flex flex-col items-center">
-                                <div className="bg-green-100 border-3 border-green-400 rounded-lg p-4 w-full text-center">
-                                  <div className="text-xs font-bold text-green-600 mb-1">LEVEL 2: STORE</div>
-                                  <code className="text-sm font-bold text-green-900">store_id</code>
-                                  <div className="text-xs text-green-700 mt-1">10 stores total</div>
-                                </div>
-                              </div>
-                              
-                              <div className="flex flex-col items-center opacity-0">
-                                <div className="bg-green-100 border-3 border-green-400 rounded-lg p-4 w-full text-center">
-                                  <div className="text-xs font-bold text-green-600 mb-1">PLACEHOLDER</div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-4 bg-green-50 rounded-lg p-3 text-xs text-green-800">
-                              <strong>Example:</strong><br/>
-                              CA → CA_3<br/>
-                              <span className="text-green-600">(State → Store)</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Bottom: Final Granularity */}
-                        <div className="mt-8 pt-6 border-t-2 border-gray-200">
-                          <div className="text-center mb-4">
-                            <div className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg font-bold text-lg shadow-lg">
-                              ↓ Combined: Final Forecasting Unit ↓
-                            </div>
-                          </div>
-                          
-                          <div className="bg-purple-50 border-3 border-purple-400 rounded-xl p-6 text-center">
-                            <div className="text-sm font-bold text-purple-900 mb-2">UNIQUE_ID (Item × Store Combination)</div>
-                            <code className="text-lg font-bold text-purple-800 bg-white px-4 py-2 rounded border-2 border-purple-300 inline-block">
-                              item_id + store_id
-                            </code>
-                            <div className="text-xs text-purple-700 mt-3">
-                              30,490 unique combinations (3,049 items × 10 stores)
-                            </div>
-                            <div className="text-xs text-purple-600 mt-2 italic">
-                              Each row in sales_train.csv = one unique item-store combination with 1,941 days of sales
-                            </div>
-                          </div>
-                          
-                          <div className="mt-4 bg-yellow-50 border-l-4 border-yellow-400 rounded p-4">
-                            <div className="text-sm text-yellow-900">
-                              <strong>💡 Why This Matters:</strong> You can forecast at ANY level of this hierarchy:
-                            </div>
-                            <div className="text-xs text-yellow-800 mt-2 space-y-1">
-                              <div>• <strong>Bottom-up:</strong> Forecast each item-store, then aggregate to dept/category/state</div>
-                              <div>• <strong>Top-down:</strong> Forecast total category sales, then disaggregate to items</div>
-                              <div>• <strong>Middle-out:</strong> Forecast at department level, then reconcile up/down</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Tables Section */}
-                {expandedSection === 'tables' && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {Object.entries(tables).map(([id, table]) => (
-                        <TableCard key={id} id={id} table={table} />
-                      ))}
-                    </div>
-
-                    {selectedTable ? (
-                      <div 
-                        className="bg-white rounded-xl p-8 shadow-xl border-4"
-                        style={{ borderColor: tables[selectedTable].color }}
+                  className="absolute top-4 left-0 h-1 rounded transition-all duration-300"
+                  style={{ 
+                    width: `${(activeIndex / (tabs.length - 1)) * 100}%`,
+                    backgroundColor: colors.primary
+                  }}
+                ></div>
+                
+                <div className="relative flex justify-between">
+                  {tabs.map((tab, index) => {
+                    const isActive = tab.id === activeTab;
+                    const isPast = index < activeIndex;
+                    
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className="flex flex-col items-center group"
                       >
-                        <div className="flex items-center gap-4 mb-6 pb-6 border-b-4" style={{ borderColor: tables[selectedTable].color }}>
-                          <div style={{ color: tables[selectedTable].color }}>
-                            {tables[selectedTable].icon}
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold text-gray-500 tracking-wider mb-1">
-                              {tables[selectedTable].role}
-                            </div>
-                            <h2 className="text-3xl font-bold" style={{ color: tables[selectedTable].color }}>
-                              {tables[selectedTable].name}
-                            </h2>
-                            <div className="text-sm text-gray-600 mt-1">{tables[selectedTable].description}</div>
-                          </div>
-                        </div>
-
                         <div 
-                          className="rounded-lg p-4 mb-6 font-semibold"
-                          style={{ 
-                            backgroundColor: `${tables[selectedTable].color}15`,
-                            color: tables[selectedTable].color,
-                            borderLeft: `4px solid ${tables[selectedTable].color}`
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 border-2"
+                          style={{
+                            backgroundColor: isActive ? colors.primary : isPast ? colors.light : 'white',
+                            borderColor: isActive ? colors.primary : isPast ? colors.light : '#e5e7eb',
+                            color: isActive || isPast ? 'white' : colors.gray
                           }}
                         >
-                          💡 {tables[selectedTable].keyPoint}
+                          {isPast ? '✓' : tab.icon}
                         </div>
-
-                        {tables[selectedTable].warnings.map((warning, idx) => (
-                          <div key={idx} className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded">
-                            <div className="flex items-start gap-3">
-                              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                              <div>
-                                <div className="font-bold text-red-800 mb-1">{warning.title}</div>
-                                <div className="text-sm text-red-700">{warning.content}</div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-
-                        <div className="space-y-3">
-                          <h3 className="text-xl font-bold text-gray-800 mb-4">Fields</h3>
-                          {tables[selectedTable].fields.map((field, idx) => (
-                            <div 
-                              key={idx}
-                              className="border-2 border-gray-200 border-l-8 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                              style={{ borderLeftColor: field.type === 'static' ? '#06A77D' : field.type === 'target' ? '#E63946' : '#F77F00' }}
-                            >
-                              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                                <code className="bg-gray-100 px-3 py-1 rounded font-mono font-bold text-sm">
-                                  {field.name}
-                                </code>
-                                <div className="flex gap-2 flex-wrap">
-                                  <FieldBadge type={field.type} />
-                                  <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded font-bold">
-                                    {field.classification}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="text-sm text-gray-700 mb-2">{field.desc}</div>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                                <div className="bg-blue-50 p-2 rounded">
-                                  <span className="font-bold text-blue-800">Known At: </span>
-                                  <span className="text-blue-700">{field.knownAt}</span>
-                                </div>
-                                <div className="bg-purple-50 p-2 rounded">
-                                  <span className="font-bold text-purple-800">Leakage Risk: </span>
-                                  <span className="text-purple-700">{field.leakage}</span>
-                                </div>
-                                <div className="bg-gray-100 p-2 rounded font-mono">
-                                  <span className="font-bold text-gray-800">Example: </span>
-                                  <span className="text-gray-700">{field.example}</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                        <div 
+                          className="text-xs font-semibold mt-2 transition-colors"
+                          style={{ color: isActive ? colors.primary : colors.gray }}
+                        >
+                          {tab.label}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="bg-white rounded-xl p-16 text-center shadow-lg">
-                        <Database className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-gray-600 mb-2">Select a table to explore</h3>
-                        <p className="text-gray-500">Click on any table card above to see detailed field information</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Concepts Section */}
-                {expandedSection === 'concepts' && (
-                  <div className="space-y-6">
-                    {/* Core Concepts Box */}
-                    <div 
-                      className="rounded-xl p-8 text-white shadow-xl"
-                      style={{ background: `linear-gradient(135deg, ${colors.dark} 0%, ${colors.purple} 35%, ${colors.accent} 65%, ${colors.primary} 100%)` }}
-                    >
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="text-4xl">🎯</div>
-                        <h2 className="text-3xl font-bold">Core Concepts</h2>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                        <div className="bg-white bg-opacity-20 rounded-lg p-4" style={{ borderLeft: `4px solid ${colors.light}` }}>
-                          <div className="font-bold text-lg mb-2 flex items-center gap-2">
-                            <span>✓</span>
-                            <span>STATIC</span>
-                          </div>
-                          <div className="text-sm opacity-95">
-                            Attributes that never change over time. Always safe to use.
-                          </div>
-                          <div className="text-xs mt-2 opacity-80 italic">
-                            Example: item_id, store_id, dept_id
-                          </div>
-                        </div>
-                        
-                        <div className="bg-white bg-opacity-20 rounded-lg p-4" style={{ borderLeft: `4px solid ${colors.purple}` }}>
-                          <div className="font-bold text-lg mb-2 flex items-center gap-2">
-                            <span>✓</span>
-                            <span>KNOWN-AT-TIME</span>
-                          </div>
-                          <div className="text-sm opacity-95">
-                            Dynamic features known in advance from calendars or schedules.
-                          </div>
-                          <div className="text-xs mt-2 opacity-80 italic">
-                            Example: holidays, planned promotions, weekday
-                          </div>
-                        </div>
-                        
-                        <div className="bg-white bg-opacity-20 rounded-lg p-4" style={{ borderLeft: `4px solid ${colors.accent}` }}>
-                          <div className="font-bold text-lg mb-2 flex items-center gap-2">
-                            <span>⚠️</span>
-                            <span>DYNAMIC (Unknown)</span>
-                          </div>
-                          <div className="text-sm opacity-95">
-                            Features that change over time and are NOT known at forecast time.
-                          </div>
-                          <div className="text-xs mt-2 opacity-80 italic">
-                            Example: future prices, competitor actions
-                          </div>
-                        </div>
-                        
-                        <div className="bg-white bg-opacity-20 rounded-lg p-4" style={{ borderLeft: `4px solid ${colors.dark}` }}>
-                          <div className="font-bold text-lg mb-2 flex items-center gap-2">
-                            <span>🎯</span>
-                            <span>TARGET</span>
-                          </div>
-                          <div className="text-sm opacity-95">
-                            What you're predicting. Can use PAST values as lags, never future.
-                          </div>
-                          <div className="text-xs mt-2 opacity-80 italic">
-                            Example: sales (d_1...d_1941)
-                          </div>
-                        </div>
-                        
-                        <div className="bg-white bg-opacity-20 rounded-lg p-4 md:col-span-2 lg:col-span-2" style={{ borderLeft: '4px solid #c41e3a' }}>
-                          <div className="font-bold text-lg mb-2 flex items-center gap-2">
-                            <span>🚨</span>
-                            <span>DATA LEAKAGE</span>
-                          </div>
-                          <div className="text-sm opacity-95">
-                            Using future information to predict the future. Happens when you misclassify features above.
-                          </div>
-                          <div className="text-xs mt-2 opacity-80 italic">
-                            Example: Using next week's actual price to forecast next week's sales
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-white bg-opacity-15 rounded-lg p-4 border-l-4 border-white">
-                        <div className="font-bold mb-2">⚡ The Critical Question</div>
-                        <div className="text-sm">
-                          Before using any feature, ask: <strong>"Will I actually have this data when I need to make the forecast?"</strong>
-                          <br/>
-                          Correctly classifying features prevents leakage and ensures production success.
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl p-8 shadow-lg mb-6">
-                      <h2 className="text-2xl font-bold text-gray-800 mb-4">Core Terminology</h2>
-                      <p className="text-gray-700 mb-4">
-                        These four concepts form the foundation of production-ready forecasting. 
-                        Below, you'll find EVERY column in the M5 dataset classified by type. 
-                        Understanding which category each field belongs to prevents the most common—and most expensive—mistakes.
-                      </p>
-                      <div className="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded">
-                        <div className="font-bold text-indigo-900 mb-2">📋 Complete M5 Classification</div>
-                        <div className="text-sm text-indigo-800">
-                          This is an exhaustive list. Every single column from sales_train.csv, calendar.csv, 
-                          and sell_prices.csv is classified below. Use this as a reference when building your features.
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* The Leakage Trap */}
-                    <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-8 border-4 border-red-400 shadow-lg mb-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <AlertTriangle className="w-8 h-8 text-red-600" />
-                        <h3 className="text-2xl font-bold text-red-800">The Leakage Trap</h3>
-                      </div>
-                      <p className="text-gray-700 mb-4">
-                        The M5 dataset is deceptively simple. The biggest mistake beginners make? 
-                        <strong className="text-red-700"> Using future prices to predict future sales.</strong>
-                      </p>
-                      <div className="bg-white rounded-lg p-4 mb-4">
-                        <div className="font-mono text-sm text-gray-800 mb-2">
-                          ❌ <strong>WRONG:</strong> "Let's join next week's actual price to forecast next week's sales"
-                        </div>
-                        <div className="font-mono text-sm text-gray-800">
-                          ✅ <strong>RIGHT:</strong> "Let's use last week's price or the planned promotion schedule"
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-700">
-                        The concepts below will teach you to spot these issues before they contaminate your pipeline. 
-                        Understanding STATIC vs. DYNAMIC vs. KNOWN-AT-TIME is the key to preventing leakage.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {conceptCards.map(concept => (
-                        <ConceptCard key={concept.id} concept={concept} />
-                      ))}
-                    </div>
-
-                    {/* Real-World Scenarios - Truncated for brevity, but included in full file */}
-                  </div>
-                )}
-
-                {/* Cheat Sheet Section */}
-                {expandedSection === 'cheatsheet' && (
-                  <div className="space-y-6">
-                    <div className="bg-white rounded-xl p-8 shadow-lg">
-                      <h2 className="text-2xl font-bold text-gray-800 mb-4">📋 Complete M5 Column Reference</h2>
-                      <p className="text-gray-700 mb-6">
-                        Use this as your quick reference when building features. Every single column in the M5 dataset 
-                        is classified here by type. Bookmark this page and refer back when you're unsure about a field's availability.
-                      </p>
-                      
-                      <div className="space-y-6">
-                        {/* Static Columns */}
-                        <div className="p-5 rounded-lg" style={{ borderLeft: '4px solid #53b4e6', backgroundColor: 'rgba(83, 180, 230, 0.1)' }}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <CheckCircle className="w-5 h-5" style={{ color: '#2596be' }} />
-                            <h4 className="text-lg font-bold" style={{ color: '#1d1f56' }}>STATIC Columns (5 total)</h4>
-                          </div>
-                          <div className="text-sm mb-3" style={{ color: '#2596be' }}>
-                            ✓ Never change over time • ✓ Safe to join anytime • ✓ No leakage risk
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                            {['item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'].map(col => (
-                              <code key={col} className="bg-white px-3 py-2 rounded text-xs font-bold text-center" style={{ border: '2px solid #53b4e6', color: '#1d1f56' }}>
-                                {col}
-                              </code>
-                            ))}
-                          </div>
-                          <div className="text-xs mt-3 italic" style={{ color: '#2596be' }}>
-                            Found in: sales_train.csv (all 5), sell_prices.csv (item_id, store_id)
-                          </div>
-                        </div>
-
-                        {/* Known-At-Time Columns */}
-                        <div className="p-5 rounded-lg" style={{ borderLeft: '4px solid #3a2f7e', backgroundColor: 'rgba(58, 47, 126, 0.1)' }}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <Calendar className="w-5 h-5" style={{ color: '#3a2f7e' }} />
-                            <h4 className="text-lg font-bold" style={{ color: '#1d1f56' }}>KNOWN-AT-TIME Columns (11 total)</h4>
-                          </div>
-                          <div className="text-sm mb-3" style={{ color: '#3a2f7e' }}>
-                            ✓ Known in advance • ✓ Safe for forecasting • ✓ Calendar-based
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {['date', 'wday', 'weekday', 'month', 'year', 'event_name_1', 'event_type_1', 'event_name_2', 'event_type_2', 'snap_CA', 'snap_TX', 'snap_WI'].map(col => (
-                              <code key={col} className="bg-white px-3 py-2 rounded text-xs font-bold text-center" style={{ border: '2px solid #3a2f7e', color: '#1d1f56' }}>
-                                {col}
-                              </code>
-                            ))}
-                          </div>
-                          <div className="text-xs mt-3 italic" style={{ color: '#3a2f7e' }}>
-                            Found in: calendar.csv (all fields except wm_yr_wk which is used for joining)
-                          </div>
-                        </div>
-
-                        {/* Dynamic (Unknown) Columns */}
-                        <div className="p-5 rounded-lg" style={{ borderLeft: '4px solid #2d42a7', backgroundColor: 'rgba(45, 66, 167, 0.1)' }}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <AlertTriangle className="w-5 h-5" style={{ color: '#2d42a7' }} />
-                            <h4 className="text-lg font-bold" style={{ color: '#1d1f56' }}>DYNAMIC (Unknown) Columns (2 total)</h4>
-                          </div>
-                          <div className="text-sm mb-3" style={{ color: '#2d42a7' }}>
-                            ⚠️ Changes over time • ⚠️ NOT known at forecast time • ⚠️ HIGH leakage risk
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {['sell_price', 'wm_yr_wk'].map(col => (
-                              <code key={col} className="bg-white px-3 py-2 rounded text-xs font-bold text-center" style={{ border: '2px solid #2d42a7', color: '#1d1f56' }}>
-                                {col}
-                              </code>
-                            ))}
-                          </div>
-                          <div className="text-xs mt-3 italic" style={{ color: '#2d42a7' }}>
-                            Found in: sell_prices.csv (both), calendar.csv (wm_yr_wk - used as join key)
-                          </div>
-                          <div className="rounded p-3 mt-3" style={{ backgroundColor: 'rgba(45, 66, 167, 0.15)', border: '1px solid #2d42a7' }}>
-                            <div className="text-xs font-bold mb-1" style={{ color: '#1d1f56' }}>🚨 CRITICAL WARNING</div>
-                            <div className="text-xs" style={{ color: '#2d42a7' }}>
-                              <strong>sell_price</strong> is THE most dangerous column in M5. You CANNOT use future prices. 
-                              Use lagged prices, planned promotional prices, or price forecasts instead.
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Target Columns */}
-                        <div className="p-5 rounded-lg" style={{ borderLeft: '4px solid #1d1f56', backgroundColor: 'rgba(29, 31, 86, 0.1)' }}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <AlertTriangle className="w-5 h-5" style={{ color: '#1d1f56' }} />
-                            <h4 className="text-lg font-bold" style={{ color: '#1d1f56' }}>TARGET Columns (1,941 total)</h4>
-                          </div>
-                          <div className="text-sm mb-3" style={{ color: '#3a2f7e' }}>
-                            🎯 What you're predicting • ⚠️ Can use past as lags • ⚠️ NEVER use future values
-                          </div>
-                          <div className="bg-white px-4 py-3 rounded" style={{ border: '2px solid #1d1f56' }}>
-                            <code className="text-sm font-bold" style={{ color: '#1d1f56' }}>
-                              d_1, d_2, d_3, ..., d_1939, d_1940, d_1941
-                            </code>
-                            <div className="text-xs mt-2" style={{ color: '#3a2f7e' }}>
-                              Daily unit sales from 2011-01-29 through 2016-06-19 (1,941 days)
-                            </div>
-                          </div>
-                          <div className="text-xs mt-3 italic" style={{ color: '#3a2f7e' }}>
-                            Found in: sales_train.csv (1,941 columns, one per day)
-                          </div>
-                          <div className="rounded p-3 mt-3" style={{ backgroundColor: 'rgba(196, 30, 58, 0.1)', border: '1px solid #c41e3a' }}>
-                            <div className="text-xs font-bold mb-1" style={{ color: '#c41e3a' }}>🚨 LEAKAGE EXAMPLE</div>
-                            <div className="text-xs" style={{ color: '#8b0000' }}>
-                              To forecast <strong>d_100</strong>, you can ONLY use <strong>d_1...d_99</strong> as features. 
-                              Using d_100 or any future d_X values is data leakage and will cause production failure.
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-6 rounded-lg p-4" style={{ backgroundColor: 'rgba(37, 150, 190, 0.1)', border: '2px solid #2596be' }}>
-                        <div className="text-sm font-bold mb-2" style={{ color: '#1d1f56' }}>💡 Quick Reference Summary</div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs" style={{ color: '#2d42a7' }}>
-                          <div><strong>Total columns:</strong> 1,959 (5 static + 11 known-at + 2 dynamic + 1,941 target)</div>
-                          <div><strong>Safe to use:</strong> Static + Known-At-Time = 16 columns</div>
-                          <div><strong>Requires care:</strong> Dynamic (2) - must use lags or plans</div>
-                          <div><strong>Target only:</strong> d_1...d_1941 - can create lag features from past values</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick Decision Tree */}
-                    <div className="rounded-xl p-8 shadow-lg" style={{ background: 'linear-gradient(135deg, rgba(83, 180, 230, 0.1) 0%, rgba(45, 66, 167, 0.1) 100%)', border: '4px solid #2d42a7' }}>
-                      <h3 className="text-2xl font-bold mb-6" style={{ color: '#1d1f56' }}>🎯 Decision Tree: Can I Use This Column?</h3>
-                      
-                      <div className="space-y-4">
-                        <div className="bg-white rounded-lg p-5" style={{ border: '2px solid #53b4e6' }}>
-                          <div className="font-bold text-lg mb-2" style={{ color: '#1d1f56' }}>✅ YES - Use it directly</div>
-                          <div className="text-sm mb-2" style={{ color: '#8b8b8b' }}>
-                            <strong>If the column is:</strong>
-                          </div>
-                          <ul className="text-sm space-y-1 ml-4" style={{ color: '#2d42a7' }}>
-                            <li>• Any of the 5 STATIC columns (item_id, dept_id, cat_id, store_id, state_id)</li>
-                            <li>• Any of the 11 KNOWN-AT-TIME columns from calendar.csv</li>
-                            <li>• A date-derived feature (weekday, month, year, etc.)</li>
-                          </ul>
-                          <div className="text-xs mt-2 italic" style={{ color: '#53b4e6' }}>
-                            These 16 columns are always safe. No special handling needed.
-                          </div>
-                        </div>
-
-                        <div className="bg-white rounded-lg p-5" style={{ border: '2px solid #2d42a7' }}>
-                          <div className="font-bold text-lg mb-2" style={{ color: '#1d1f56' }}>⚠️ MAYBE - Use with care</div>
-                          <div className="text-sm mb-2" style={{ color: '#8b8b8b' }}>
-                            <strong>If the column is:</strong>
-                          </div>
-                          <ul className="text-sm space-y-1 ml-4" style={{ color: '#2d42a7' }}>
-                            <li>• <strong>sell_price</strong> - Use LAGGED values (last week's price) or PLANNED promotional prices</li>
-                            <li>• <strong>wm_yr_wk</strong> - Only use for joining; validate temporal ordering</li>
-                            <li>• <strong>d_X (past values)</strong> - Can create LAG features (d_t-1, d_t-7, etc.) but verify temporal split</li>
-                          </ul>
-                          <div className="text-xs mt-2 italic" style={{ color: '#2d42a7' }}>
-                            These require explicit temporal handling. Document your assumptions.
-                          </div>
-                        </div>
-
-                        <div className="bg-white rounded-lg p-5" style={{ border: '2px solid #c41e3a' }}>
-                          <div className="font-bold text-lg mb-2" style={{ color: '#1d1f56' }}>❌ NO - Do not use</div>
-                          <div className="text-sm mb-2" style={{ color: '#8b8b8b' }}>
-                            <strong>If the column is:</strong>
-                          </div>
-                          <ul className="text-sm space-y-1 ml-4" style={{ color: '#c41e3a' }}>
-                            <li>• <strong>sell_price</strong> for FUTURE weeks - You don't know next week's actual price</li>
-                            <li>• <strong>d_X</strong> where X ≥ forecast date - You can't use the future to predict the future</li>
-                            <li>• Any value that would require "peeking" into the future</li>
-                          </ul>
-                          <div className="text-xs mt-2 italic" style={{ color: '#c41e3a' }}>
-                            This is data leakage. Models will look great in validation but fail in production.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Common Leakage Patterns */}
-                    <div className="bg-white rounded-xl p-8 shadow-lg">
-                      <h3 className="text-2xl font-bold mb-6" style={{ color: '#1d1f56' }}>🚨 Common Leakage Patterns to Avoid</h3>
-                      
-                      <div className="space-y-4">
-                        <div className="flex gap-4 items-start p-4 rounded" style={{ backgroundColor: 'rgba(196, 30, 58, 0.1)', borderLeft: '4px solid #c41e3a' }}>
-                          <div className="text-2xl">❌</div>
-                          <div>
-                            <div className="font-bold mb-1" style={{ color: '#c41e3a' }}>Joining prices without time constraint</div>
-                            <code className="text-xs px-2 py-1 rounded block mb-2" style={{ backgroundColor: 'rgba(196, 30, 58, 0.15)', color: '#8b0000' }}>
-                              df.merge(prices, on=['item_id', 'store_id', 'wm_yr_wk'])  # WRONG
-                            </code>
-                            <div className="text-sm" style={{ color: '#8b0000' }}>
-                              This joins ALL prices, including future prices. Always filter prices to ≤ forecast_date.
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-4 items-start p-4 rounded" style={{ backgroundColor: 'rgba(196, 30, 58, 0.1)', borderLeft: '4px solid #c41e3a' }}>
-                          <div className="text-2xl">❌</div>
-                          <div>
-                            <div className="font-bold mb-1" style={{ color: '#c41e3a' }}>Using current period sales as feature</div>
-                            <code className="text-xs px-2 py-1 rounded block mb-2" style={{ backgroundColor: 'rgba(196, 30, 58, 0.15)', color: '#8b0000' }}>
-                              {"train_df['y'] = train_df['d_100']  # Predicting d_100"}<br/>
-                              {"train_df['feature'] = train_df['d_100']  # WRONG - using same day"}
-                            </code>
-                            <div className="text-sm" style={{ color: '#8b0000' }}>
-                              You can't know d_100's sales when forecasting d_100. Only use d_1...d_99.
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-4 items-start p-4 rounded" style={{ backgroundColor: 'rgba(196, 30, 58, 0.1)', borderLeft: '4px solid #c41e3a' }}>
-                          <div className="text-2xl">❌</div>
-                          <div>
-                            <div className="font-bold mb-1" style={{ color: '#c41e3a' }}>Rolling window that includes future</div>
-                            <code className="text-xs px-2 py-1 rounded block mb-2" style={{ backgroundColor: 'rgba(196, 30, 58, 0.15)', color: '#8b0000' }}>
-                              {"df['rolling_mean_7'] = df['y'].rolling(7, center=True).mean()  # WRONG"}
-                            </code>
-                            <div className="text-sm" style={{ color: '#8b0000' }}>
-                              center=True uses future values. Use center=False or min_periods to look backward only.
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-4 items-start p-4 rounded" style={{ backgroundColor: 'rgba(83, 180, 230, 0.1)', borderLeft: '4px solid #53b4e6' }}>
-                          <div className="text-2xl">✅</div>
-                          <div>
-                            <div className="font-bold mb-1" style={{ color: '#2596be' }}>Correct lag feature creation</div>
-                            <code className="text-xs px-2 py-1 rounded block mb-2" style={{ backgroundColor: 'rgba(83, 180, 230, 0.15)', color: '#1d1f56' }}>
-                              {"df['lag_1'] = df.groupby('unique_id')['y'].shift(1)  # Previous day"}<br/>
-                              {"df['lag_7'] = df.groupby('unique_id')['y'].shift(7)  # Same day last week"}
-                            </code>
-                            <div className="text-sm" style={{ color: '#2596be' }}>
-                              shift() creates proper lags. For d_100, lag_1 gives you d_99, which is safe.
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Current Tab Question */}
+              <div 
+                className="mt-6 p-4 rounded-lg text-center"
+                style={{ backgroundColor: `${colors.primary}10` }}
+              >
+                <span className="text-2xl mr-2">{tabs[activeIndex].icon}</span>
+                <span className="font-bold text-lg" style={{ color: colors.dark }}>
+                  {tabs[activeIndex].question}
+                </span>
               </div>
             </div>
           );
         };
 
-        // Render the app
+        // Transition CTA Component
+        const TransitionCTA = ({ text, onClick }) => (
+          <div 
+            onClick={onClick}
+            className="mt-8 p-4 rounded-lg flex items-center justify-between cursor-pointer hover:shadow-md transition-all group"
+            style={{ backgroundColor: `${colors.primary}10`, border: `2px solid ${colors.primary}` }}
+          >
+            <span className="font-semibold" style={{ color: colors.dark }}>{text}</span>
+            <div 
+              className="flex items-center gap-1 font-bold group-hover:translate-x-1 transition-transform"
+              style={{ color: colors.primary }}
+            >
+              Continue <ChevronRight />
+            </div>
+          </div>
+        );
+
+        // ==================== RAW DATA TAB ====================
+        const RawDataTab = ({ setActiveTab }) => {
+          const files = [
+            { name: 'sales_train.csv', icon: <Database className="w-8 h-8" />, color: colors.primary, role: 'Historical daily sales', shape: '30,490 × 1,947', description: 'Each row is one item-store. Days are columns (d_1 to d_1941).' },
+            { name: 'calendar.csv', icon: <Calendar className="w-8 h-8" />, color: colors.purple, role: 'Date information', shape: '1,969 × 14', description: 'Maps d_X codes to actual dates. Contains events, weekdays, SNAP info.' },
+            { name: 'sell_prices.csv', icon: <DollarSign className="w-8 h-8" />, color: colors.danger, role: 'Weekly pricing', shape: '6,841,121 × 4', description: 'Price per item-store-week. Handle with care—leakage risk!' }
+          ];
+
+          return (
+            <div className="space-y-6">
+              {/* M5 Overview */}
+              <div className="bg-white rounded-xl p-8 shadow-lg">
+                <h3 className="text-2xl font-bold mb-4" style={{ color: colors.dark }}>What is M5?</h3>
+                <p className="text-gray-700 mb-4">
+                  The M5 dataset comes from Walmart and contains <strong>~5 years of daily sales data</strong> for thousands of items across multiple stores. Your goal: predict future sales for 3,049 products across 10 stores in 3 US states (CA, TX, WI).
+                </p>
+                <p className="text-gray-600 mb-6">
+                  It's split into several files, each serving a specific role in the forecasting pipeline. This module walks you through: <strong>raw files → understanding each column → transforming into forecast-ready format.</strong>
+                </p>
+                
+                <div className="rounded-lg p-4" style={{ backgroundColor: `${colors.accent}10`, borderLeft: `4px solid ${colors.accent}` }}>
+                  <h4 className="font-bold mb-2" style={{ color: colors.dark }}>💡 Why This Matters</h4>
+                  <p className="text-sm" style={{ color: colors.accent }}>
+                    Understanding how these tables connect and what each field represents is not just academic — it's the difference between a model that works in notebooks and one that survives production. <strong>Most forecasting failures happen at the data preparation stage, not the modeling stage.</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <p className="text-gray-700">These are the <strong>raw, untransformed files</strong> exactly as downloaded from Kaggle. No preprocessing has been applied yet.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {files.map(file => (
+                  <div key={file.name} className="bg-white rounded-xl p-6 shadow-lg border-t-4 hover:shadow-xl transition-shadow" style={{ borderColor: file.color }}>
+                    <div style={{ color: file.color }} className="mb-3">{file.icon}</div>
+                    <div className="font-bold text-lg mb-1" style={{ color: colors.dark }}>{file.name}</div>
+                    <div className="text-sm font-semibold mb-2" style={{ color: file.color }}>{file.role}</div>
+                    <div className="text-sm text-gray-600 mb-3">{file.description}</div>
+                    <div className="text-xs bg-gray-100 rounded px-2 py-1 font-mono inline-block">{file.shape}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Hierarchy Diagram */}
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <h3 className="text-xl font-bold mb-6" style={{ color: colors.dark }}>Data Hierarchies</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Product Hierarchy */}
+                  <div>
+                    <div className="text-center mb-4">
+                      <span className="inline-block px-4 py-2 rounded-lg text-white font-bold" style={{ backgroundColor: colors.accent }}>Product Hierarchy</span>
+                    </div>
+                    <div className="space-y-2">
+                      {[
+                        { level: 'Category', field: 'cat_id', count: '3 total' },
+                        { level: 'Department', field: 'dept_id', count: '7 total' },
+                        { level: 'Item', field: 'item_id', count: '3,049 total' }
+                      ].map((item, idx) => (
+                        <div key={item.level}>
+                          <div className="p-3 rounded-lg text-center" style={{ backgroundColor: `${colors.accent}${15 + idx * 10}`, border: `2px solid ${colors.accent}` }}>
+                            <div className="text-xs font-bold" style={{ color: colors.accent }}>{item.level}</div>
+                            <code className="font-bold" style={{ color: colors.dark }}>{item.field}</code>
+                            <div className="text-xs text-gray-500">{item.count}</div>
+                          </div>
+                          {idx < 2 && <div className="text-center text-gray-300 text-xl">↓</div>}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 text-xs text-center text-gray-500">Example: FOODS → FOODS_3 → FOODS_3_090</div>
+                  </div>
+
+                  {/* Location Hierarchy */}
+                  <div>
+                    <div className="text-center mb-4">
+                      <span className="inline-block px-4 py-2 rounded-lg text-white font-bold" style={{ backgroundColor: colors.success }}>Location Hierarchy</span>
+                    </div>
+                    <div className="space-y-2">
+                      {[
+                        { level: 'State', field: 'state_id', count: '3 total (CA, TX, WI)' },
+                        { level: 'Store', field: 'store_id', count: '10 total' }
+                      ].map((item, idx) => (
+                        <div key={item.level}>
+                          <div className="p-3 rounded-lg text-center" style={{ backgroundColor: `${colors.success}${15 + idx * 15}`, border: `2px solid ${colors.success}` }}>
+                            <div className="text-xs font-bold" style={{ color: colors.success }}>{item.level}</div>
+                            <code className="font-bold" style={{ color: colors.dark }}>{item.field}</code>
+                            <div className="text-xs text-gray-500">{item.count}</div>
+                          </div>
+                          {idx < 1 && <div className="text-center text-gray-300 text-xl">↓</div>}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 text-xs text-center text-gray-500">Example: CA → CA_3</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Current State Warning */}
+              <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: `${colors.danger}10`, border: `2px solid ${colors.danger}` }}>
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-6 h-6 flex-shrink-0" style={{ color: colors.danger }} />
+                  <div>
+                    <div className="font-bold text-lg mb-2" style={{ color: colors.dark }}>Current State: NOT Forecast-Ready</div>
+                    <div className="text-sm text-gray-700 space-y-1">
+                      <div>• <strong>Wide format</strong> — days are columns (d_1, d_2, ... d_1941)</div>
+                      <div>• <strong>No unified series ID</strong> — item and store are separate columns</div>
+                      <div>• <strong>Dates are codes</strong> — d_1 instead of 2011-01-29</div>
+                      <div>• <strong>Prices separate</strong> — need to join carefully to avoid leakage</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <TransitionCTA text="Before transforming, learn the vocabulary you'll need" onClick={() => setActiveTab('vocabulary')} />
+            </div>
+          );
+        };
+
+        // ==================== VOCABULARY TAB ====================
+        const VocabularyTab = ({ setActiveTab }) => {
+          const concepts = [
+            { id: 'static', title: 'STATIC', color: colors.success, icon: '✓', definition: 'Attributes that NEVER change over time for a given entity.', keyQuestion: 'Does this value stay constant for this item/store?', examples: ['item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'], safe: true, watchOut: 'In M5 these are truly static. In real life, things like store size might change after renovations.' },
+            { id: 'known-at', title: 'KNOWN-AT-TIME', color: colors.purple, icon: '📅', definition: 'Features that change over time BUT are known in advance from calendars or schedules.', keyQuestion: 'Is this value determined by a predetermined calendar?', examples: ['date', 'weekday', 'month', 'event_name', 'snap_CA'], safe: true, watchOut: 'Known EVENT ≠ Known IMPACT. You know Christmas is Dec 25, but not how much sales will spike.' },
+            { id: 'dynamic', title: 'DYNAMIC (Unknown)', color: colors.danger, icon: '⚠️', definition: 'Features that change over time and are NOT known at forecast time.', keyQuestion: 'Will I actually know this value when making the forecast?', examples: ['sell_price (future)', 'competitor actions'], safe: false, watchOut: 'This is where leakage happens. sell_price for next week is UNKNOWN—use lagged or planned values instead.' },
+            { id: 'target', title: 'TARGET', color: colors.dark, icon: '🎯', definition: "The variable you're predicting. Past values can be features, future/current values CANNOT.", keyQuestion: 'Am I trying to predict this?', examples: ['d_1', 'd_2', '...', 'd_1941', '→ becomes y'], safe: false, watchOut: 'The #1 mistake: using d_100 to predict d_100. You CAN use d_1...d_99 as lag features.' }
+          ];
+
+          return (
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <p className="text-gray-700 text-lg">Every column in M5 falls into one of four categories. Learn these—you'll use them constantly.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {concepts.map(concept => (
+                  <div key={concept.id} className="bg-white rounded-xl p-6 shadow-lg border-l-4" style={{ borderColor: concept.color }}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: `${concept.color}20`, color: concept.color }}>{concept.icon}</div>
+                      <div>
+                        <div className="font-bold text-lg" style={{ color: concept.color }}>{concept.title}</div>
+                        <div className="text-xs" style={{ color: concept.safe ? colors.success : colors.danger }}>{concept.safe ? '✓ Safe to use' : '⚠️ Handle with care'}</div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-700 mb-3">{concept.definition}</div>
+                    <div className="mb-3 p-2 rounded" style={{ backgroundColor: `${concept.color}10` }}>
+                      <div className="text-xs font-bold mb-1" style={{ color: concept.color }}>Key Question:</div>
+                      <div className="text-sm italic" style={{ color: colors.dark }}>{concept.keyQuestion}</div>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {concept.examples.map((ex, i) => (
+                        <code key={i} className="text-xs px-2 py-1 rounded" style={{ backgroundColor: `${concept.color}15`, color: concept.color }}>{ex}</code>
+                      ))}
+                    </div>
+                    <div className="text-xs p-2 rounded bg-yellow-50 border-l-2 border-yellow-400">
+                      <strong>Watch out:</strong> {concept.watchOut}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Mental Model Flowchart */}
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <h3 className="text-xl font-bold mb-4" style={{ color: colors.dark }}>Mental Model: Classifying Any Column</h3>
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="bg-gray-100 rounded-lg px-6 py-3 font-semibold text-center">Is this the value I'm trying to predict?</div>
+                  <div className="flex gap-8 items-start">
+                    <div className="flex flex-col items-center">
+                      <div className="text-sm font-bold text-gray-500 mb-2">YES</div>
+                      <div className="px-4 py-2 rounded-lg text-white font-bold" style={{ backgroundColor: colors.dark }}>TARGET</div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="text-sm font-bold text-gray-500 mb-2">NO ↓</div>
+                      <div className="bg-gray-100 rounded-lg px-6 py-3 font-semibold text-center mb-4">Does it change over time?</div>
+                      <div className="flex gap-8 items-start">
+                        <div className="flex flex-col items-center">
+                          <div className="text-sm font-bold text-gray-500 mb-2">NO</div>
+                          <div className="px-4 py-2 rounded-lg text-white font-bold" style={{ backgroundColor: colors.success }}>STATIC</div>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <div className="text-sm font-bold text-gray-500 mb-2">YES ↓</div>
+                          <div className="bg-gray-100 rounded-lg px-4 py-2 font-semibold text-center text-sm mb-4">Known in advance?</div>
+                          <div className="flex gap-6">
+                            <div className="flex flex-col items-center">
+                              <div className="text-sm font-bold text-gray-500 mb-2">YES</div>
+                              <div className="px-3 py-2 rounded-lg text-white font-bold text-sm" style={{ backgroundColor: colors.purple }}>KNOWN-AT</div>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <div className="text-sm font-bold text-gray-500 mb-2">NO</div>
+                              <div className="px-3 py-2 rounded-lg text-white font-bold text-sm" style={{ backgroundColor: colors.danger }}>DYNAMIC</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <TransitionCTA text="Now see how each M5 column is classified" onClick={() => setActiveTab('explore')} />
+            </div>
+          );
+        };
+
+        // ==================== EXPLORE TAB (Detailed Tables from Original) ====================
+        const ExploreTab = ({ setActiveTab }) => {
+          const [selectedTable, setSelectedTable] = useState(null);
+
+          const tables = {
+            sales: {
+              name: 'sales_train.csv',
+              icon: <Database className="w-6 h-6" />,
+              color: colors.primary,
+              role: 'TARGET + STATIC IDENTIFIERS',
+              shape: '30,490 rows × 1,947 columns',
+              keyPoint: 'Each row = one item-store combination. Columns d_1...d_1941 are daily unit sales starting from 2011-01-29.',
+              fields: [
+                { name: 'item_id', type: 'static', classification: 'STATIC IDENTIFIER', desc: 'Product ID (3,049 unique items)', knownAt: 'Always', leakage: 'No risk', example: 'FOODS_3_090' },
+                { name: 'dept_id', type: 'static', classification: 'STATIC FEATURE', desc: 'Department (7 departments)', knownAt: 'Always', leakage: 'No risk', example: 'FOODS_3' },
+                { name: 'cat_id', type: 'static', classification: 'STATIC FEATURE', desc: 'Category (FOODS, HOBBIES, HOUSEHOLD)', knownAt: 'Always', leakage: 'No risk', example: 'FOODS' },
+                { name: 'store_id', type: 'static', classification: 'STATIC IDENTIFIER', desc: 'Store (10 stores)', knownAt: 'Always', leakage: 'No risk', example: 'CA_3' },
+                { name: 'state_id', type: 'static', classification: 'STATIC FEATURE', desc: 'State (CA, TX, WI)', knownAt: 'Always', leakage: 'No risk', example: 'CA' },
+                { name: 'd_1...d_1941', type: 'target', classification: 'TARGET VARIABLE', desc: 'Daily unit sales starting 2011-01-29', knownAt: 'Only up to forecast date', leakage: 'HIGH RISK', example: 'd_1=3, d_2=0, d_3=5' }
+              ],
+              warnings: [
+                { title: 'Wide Format Alert', text: 'Data comes in WIDE format (days as columns). Must reshape to LONG format: (unique_id, ds, y). The unique_id should combine item_id + store_id.' },
+                { title: 'Target Column Leakage', text: 'When forecasting d_1900, you can only use d_1...d_1899 as features. Never include future days in training.' },
+                { title: 'No Explicit ID Column', text: 'No single "id" column exists. You must create unique_id by combining item_id and store_id (e.g., "FOODS_3_090_CA_3").' }
+              ]
+            },
+            calendar: {
+              name: 'calendar.csv',
+              icon: <Calendar className="w-6 h-6" />,
+              color: colors.purple,
+              role: 'KNOWN-AT-TIME FEATURES',
+              shape: '1,969 rows × 14 columns',
+              keyPoint: 'Master date table. Join to sales via date or d_X. ALL fields are safe to use.',
+              fields: [
+                { name: 'date', type: 'known', classification: 'TIME IDENTIFIER', desc: 'Date in y-m-d format', knownAt: 'Always', leakage: 'No risk', example: '2011-01-29' },
+                { name: 'wm_yr_wk', type: 'known', classification: 'TIME GROUPING', desc: 'Walmart week ID (for price joins)', knownAt: 'Always', leakage: 'No risk', example: '11101' },
+                { name: 'weekday', type: 'known', classification: 'KNOWN-AT FEATURE', desc: 'Day name', knownAt: 'Always', leakage: 'No risk', example: 'Saturday' },
+                { name: 'wday', type: 'known', classification: 'KNOWN-AT FEATURE', desc: 'Day number (1=Saturday)', knownAt: 'Always', leakage: 'No risk', example: '1' },
+                { name: 'month', type: 'known', classification: 'KNOWN-AT FEATURE', desc: 'Month number', knownAt: 'Always', leakage: 'No risk', example: '1' },
+                { name: 'year', type: 'known', classification: 'KNOWN-AT FEATURE', desc: 'Year', knownAt: 'Always', leakage: 'No risk', example: '2011' },
+                { name: 'event_name_1', type: 'known', classification: 'KNOWN-AT FEATURE', desc: 'Primary event name', knownAt: 'Known in advance', leakage: 'No risk', example: 'SuperBowl' },
+                { name: 'event_type_1', type: 'known', classification: 'KNOWN-AT FEATURE', desc: 'Primary event type', knownAt: 'Known in advance', leakage: 'No risk', example: 'Sporting' },
+                { name: 'event_name_2', type: 'known', classification: 'KNOWN-AT FEATURE', desc: 'Secondary event name', knownAt: 'Known in advance', leakage: 'No risk', example: "Valentine's Day" },
+                { name: 'event_type_2', type: 'known', classification: 'KNOWN-AT FEATURE', desc: 'Secondary event type', knownAt: 'Known in advance', leakage: 'No risk', example: 'Cultural' },
+                { name: 'snap_CA/TX/WI', type: 'known', classification: 'KNOWN-AT FEATURE', desc: 'SNAP eligibility by state (0/1)', knownAt: 'Known in advance', leakage: 'No risk', example: '1 or 0' }
+              ],
+              warnings: [
+                { title: 'All Calendar Features Are Safe', text: 'Every field is derived from date or official calendars. ALL safe for forecasting.', safe: true },
+                { title: 'Event Name ≠ Event Impact', text: 'Event NAMES are known, but event IMPACT on sales is NOT. Model the pattern, don\'t use realized sales.' },
+                { title: 'Multiple Events Per Day', text: 'Some dates have TWO events (event_name_1 and event_name_2). Account for both in features.' }
+              ]
+            },
+            prices: {
+              name: 'sell_prices.csv',
+              icon: <DollarSign className="w-6 h-6" />,
+              color: colors.danger,
+              role: 'DYNAMIC FEATURES (UNKNOWN)',
+              shape: '6,841,121 rows × 4 columns',
+              keyPoint: 'Prices change weekly. CRITICAL: Watch for leakage! You cannot use future prices.',
+              fields: [
+                { name: 'store_id', type: 'static', classification: 'JOIN KEY', desc: 'Store where product is sold', knownAt: 'Always', leakage: 'No risk', example: 'CA_1' },
+                { name: 'item_id', type: 'static', classification: 'JOIN KEY', desc: 'Product ID', knownAt: 'Always', leakage: 'No risk', example: 'FOODS_3_090' },
+                { name: 'wm_yr_wk', type: 'dynamic', classification: 'JOIN KEY (TIME-VARYING)', desc: 'Walmart week ID for joining', knownAt: 'Depends on forecast date', leakage: 'CRITICAL', example: '11101' },
+                { name: 'sell_price', type: 'dynamic', classification: 'DYNAMIC FEATURE', desc: 'Weekly price. Missing = not sold.', knownAt: 'UNKNOWN for future', leakage: 'HIGH RISK', example: '1.97' }
+              ],
+              warnings: [
+                { title: '🚨 THE CRITICAL LEAKAGE RISK', text: 'Prices are DYNAMIC and UNKNOWN at forecast time. You CANNOT use next week\'s price. Use: (1) LAGGED prices, (2) PLANNED promotional prices, or (3) FORECASTED prices.', critical: true },
+                { title: 'Weekly Granularity, Daily Sales', text: 'Prices are per week (constant for 7 days), but sales are daily. Each day in a week gets the same price.' },
+                { title: 'Missing Prices Mean Something', text: 'If sell_price is missing, the product was NOT sold that week. Consider encoding as "product_available" feature.' },
+                { title: 'Prices Change Over Time', text: 'Same item at same store can have different prices due to: seasonal adjustments, clearance, promotions, or permanent changes.' }
+              ]
+            }
+          };
+
+          const TypeBadge = ({ type }) => {
+            const config = {
+              static: { bg: colors.success, text: 'STATIC' },
+              known: { bg: colors.purple, text: 'KNOWN-AT' },
+              dynamic: { bg: colors.danger, text: 'DYNAMIC' },
+              target: { bg: colors.dark, text: 'TARGET' }
+            };
+            const c = config[type];
+            return <span className="text-xs px-2 py-1 rounded text-white font-bold" style={{ backgroundColor: c.bg }}>{c.text}</span>;
+          };
+
+          return (
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <p className="text-gray-700 text-lg">Click any table to explore its fields, see examples, and understand the warnings.</p>
+              </div>
+
+              {/* Table Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {Object.entries(tables).map(([id, table]) => (
+                  <div
+                    key={id}
+                    onClick={() => setSelectedTable(selectedTable === id ? null : id)}
+                    className={`bg-white rounded-xl p-5 shadow-lg cursor-pointer transition-all hover:shadow-xl border-2 ${selectedTable === id ? 'ring-2 ring-offset-2' : ''}`}
+                    style={{ borderColor: table.color, '--tw-ring-color': table.color }}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div style={{ color: table.color }}>{table.icon}</div>
+                      <div className="font-bold" style={{ color: colors.dark }}>{table.name}</div>
+                    </div>
+                    <div className="text-xs font-bold mb-2 px-2 py-1 rounded inline-block" style={{ backgroundColor: `${table.color}20`, color: table.color }}>{table.role}</div>
+                    <div className="text-xs text-gray-500 mb-2">{table.shape}</div>
+                    <div className="text-xs text-gray-400">{selectedTable === id ? '▼ Click to collapse' : '▶ Click to expand'}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Expanded Table Detail */}
+              {selectedTable && (
+                <div className="bg-white rounded-xl p-6 shadow-xl border-t-4" style={{ borderColor: tables[selectedTable].color }}>
+                  <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: `${tables[selectedTable].color}10` }}>
+                    <span className="font-semibold">💡 </span>{tables[selectedTable].keyPoint}
+                  </div>
+
+                  {/* Warnings */}
+                  {tables[selectedTable].warnings.map((warning, idx) => (
+                    <div key={idx} className="mb-4 p-3 rounded-lg flex items-start gap-2" style={{ backgroundColor: warning.critical ? `${colors.danger}15` : warning.safe ? `${colors.success}15` : 'rgb(254 243 199)', borderLeft: `4px solid ${warning.critical ? colors.danger : warning.safe ? colors.success : '#f59e0b'}` }}>
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: warning.critical ? colors.danger : warning.safe ? colors.success : '#f59e0b' }} />
+                      <div>
+                        <div className="font-bold text-sm">{warning.title}</div>
+                        <div className="text-sm text-gray-700">{warning.text}</div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Fields Table */}
+                  <h4 className="font-bold mb-3" style={{ color: colors.dark }}>Fields</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="text-left p-2 border-b font-bold">Field</th>
+                          <th className="text-left p-2 border-b font-bold">Type</th>
+                          <th className="text-left p-2 border-b font-bold">Description</th>
+                          <th className="text-left p-2 border-b font-bold">Known At</th>
+                          <th className="text-left p-2 border-b font-bold">Leakage</th>
+                          <th className="text-left p-2 border-b font-bold">Example</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tables[selectedTable].fields.map((field, idx) => (
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="p-2 border-b"><code className="font-bold">{field.name}</code></td>
+                            <td className="p-2 border-b"><TypeBadge type={field.type} /></td>
+                            <td className="p-2 border-b text-gray-600">{field.desc}</td>
+                            <td className="p-2 border-b text-xs">{field.knownAt}</td>
+                            <td className="p-2 border-b text-xs" style={{ color: field.leakage.includes('HIGH') || field.leakage.includes('CRITICAL') ? colors.danger : colors.success }}>{field.leakage}</td>
+                            <td className="p-2 border-b"><code className="text-xs text-gray-500">{field.example}</code></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              <TransitionCTA text="You understand the data. Now let's transform it" onClick={() => setActiveTab('transform')} />
+            </div>
+          );
+        };
+
+        // ==================== INTERACTIVE TRANSFORMATION VISUALIZER (from original) ====================
+        const TransformationVisualizer = () => {
+          const [hoveredField, setHoveredField] = useState(null);
+          const [activeTab, setActiveTab] = useState('mapping');
+
+          const rawFields = [
+            { id: 'item_id', name: 'item_id', file: 'sales_train.csv', example: 'FOODS_3_090', mapsTo: ['unique_id'], color: colors.light },
+            { id: 'store_id', name: 'store_id', file: 'sales_train.csv', example: 'CA_1', mapsTo: ['unique_id'], color: colors.light },
+            { id: 'dept_id', name: 'dept_id', file: 'sales_train.csv', example: 'FOODS_3', mapsTo: ['dept_id'], color: colors.gray },
+            { id: 'cat_id', name: 'cat_id', file: 'sales_train.csv', example: 'FOODS', mapsTo: ['cat_id'], color: colors.gray },
+            { id: 'state_id', name: 'state_id', file: 'sales_train.csv', example: 'CA', mapsTo: ['state_id'], color: colors.gray },
+            { id: 'd_cols', name: 'd_1 ... d_1941', file: 'sales_train.csv', example: '3, 0, 2, ...', mapsTo: ['y'], color: colors.dark },
+            { id: 'calendar_date', name: 'date', file: 'calendar.csv', example: '2011-01-29', mapsTo: ['ds'], color: colors.accent },
+            { id: 'calendar_d', name: 'd (d_1, d_2...)', file: 'calendar.csv', example: 'd_1', mapsTo: ['ds'], color: colors.accent },
+          ];
+
+          const transformedFields = [
+            { id: 'unique_id', name: 'unique_id', desc: 'Unique series identifier', example: 'FOODS_3_090_CA_1', from: ['item_id', 'store_id'], color: colors.primary, required: true },
+            { id: 'ds', name: 'ds', desc: 'Date/timestamp', example: '2011-01-29', from: ['calendar_date', 'calendar_d', 'd_cols'], color: colors.accent, required: true },
+            { id: 'y', name: 'y', desc: 'Target variable (sales)', example: '3', from: ['d_cols'], color: colors.dark, required: true },
+            { id: 'dept_id', name: 'dept_id', desc: 'Department (static feature)', example: 'FOODS_3', from: ['dept_id'], color: colors.gray, required: false },
+            { id: 'cat_id', name: 'cat_id', desc: 'Category (static feature)', example: 'FOODS', from: ['cat_id'], color: colors.gray, required: false },
+            { id: 'state_id', name: 'state_id', desc: 'State (static feature)', example: 'CA', from: ['state_id'], color: colors.gray, required: false },
+          ];
+
+          const isHighlighted = (fieldId, side) => {
+            if (!hoveredField) return false;
+            if (side === 'raw') {
+              if (hoveredField.side === 'raw' && hoveredField.id === fieldId) return true;
+              if (hoveredField.side === 'transformed') {
+                const transformedField = transformedFields.find(f => f.id === hoveredField.id);
+                return transformedField?.from.includes(fieldId);
+              }
+            } else {
+              if (hoveredField.side === 'transformed' && hoveredField.id === fieldId) return true;
+              if (hoveredField.side === 'raw') {
+                const rawField = rawFields.find(f => f.id === hoveredField.id);
+                return rawField?.mapsTo.includes(fieldId);
+              }
+            }
+            return false;
+          };
+
+          return (
+            <div>
+              {/* Tab Navigation */}
+              <div className="flex gap-2 mb-4">
+                {[
+                  { id: 'mapping', label: '🔗 Field Mapping' },
+                  { id: 'flow', label: '📊 Data Flow' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                    style={{
+                      backgroundColor: activeTab === tab.id ? colors.accent : 'rgba(139, 139, 139, 0.1)',
+                      color: activeTab === tab.id ? 'white' : colors.gray
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {activeTab === 'mapping' && (
+                <div className="grid grid-cols-1 lg:grid-cols-11 gap-4">
+                  {/* Raw Fields Column */}
+                  <div className="lg:col-span-5">
+                    <div className="text-sm font-bold mb-3 flex items-center gap-2" style={{ color: colors.gray }}>
+                      <span>📁 RAW M5 FIELDS</span>
+                    </div>
+                    <div className="space-y-2">
+                      {rawFields.map(field => (
+                        <div
+                          key={field.id}
+                          className="p-3 rounded-lg cursor-pointer transition-all duration-200"
+                          style={{
+                            backgroundColor: isHighlighted(field.id, 'raw') 
+                              ? `${field.color}30` 
+                              : 'rgba(139, 139, 139, 0.05)',
+                            border: isHighlighted(field.id, 'raw') 
+                              ? `2px solid ${field.color}` 
+                              : '2px solid transparent',
+                            transform: isHighlighted(field.id, 'raw') ? 'scale(1.02)' : 'scale(1)'
+                          }}
+                          onMouseEnter={() => setHoveredField({ id: field.id, side: 'raw' })}
+                          onMouseLeave={() => setHoveredField(null)}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <code className="font-bold text-sm" style={{ color: colors.dark }}>{field.name}</code>
+                              <div className="text-xs text-gray-500 mt-1">{field.file}</div>
+                            </div>
+                            <code className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'rgba(139, 139, 139, 0.1)' }}>
+                              {field.example}
+                            </code>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Arrow Column */}
+                  <div className="lg:col-span-1 flex items-center justify-center">
+                    <div className="hidden lg:flex flex-col items-center gap-2">
+                      <div className="text-2xl" style={{ color: colors.accent }}>→</div>
+                      <div className="text-xs text-center" style={{ color: colors.gray }}>load_m5()</div>
+                      <div className="text-2xl" style={{ color: colors.accent }}>→</div>
+                    </div>
+                    <div className="lg:hidden text-center py-4">
+                      <div className="text-2xl" style={{ color: colors.accent }}>↓</div>
+                      <div className="text-xs" style={{ color: colors.gray }}>load_m5()</div>
+                    </div>
+                  </div>
+
+                  {/* Transformed Fields Column */}
+                  <div className="lg:col-span-5">
+                    <div className="text-sm font-bold mb-3 flex items-center gap-2" style={{ color: colors.primary }}>
+                      <span>🔑 TSFORGE TRANSFORMED SCHEMA</span>
+                    </div>
+                    <div className="space-y-2">
+                      {transformedFields.map(field => (
+                        <div
+                          key={field.id}
+                          className="p-3 rounded-lg cursor-pointer transition-all duration-200"
+                          style={{
+                            backgroundColor: isHighlighted(field.id, 'transformed') 
+                              ? `${field.color}30` 
+                              : 'rgba(139, 139, 139, 0.05)',
+                            border: isHighlighted(field.id, 'transformed') 
+                              ? `2px solid ${field.color}` 
+                              : '2px solid transparent',
+                            transform: isHighlighted(field.id, 'transformed') ? 'scale(1.02)' : 'scale(1)'
+                          }}
+                          onMouseEnter={() => setHoveredField({ id: field.id, side: 'transformed' })}
+                          onMouseLeave={() => setHoveredField(null)}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <code className="font-bold text-sm" style={{ color: colors.dark }}>{field.name}</code>
+                                {field.required && (
+                                  <span className="text-xs px-2 py-0.5 rounded text-white" style={{ backgroundColor: colors.primary }}>required</span>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">{field.desc}</div>
+                            </div>
+                            <code className="text-xs px-2 py-1 rounded" style={{ backgroundColor: `${field.color}20`, color: field.color }}>
+                              {field.example}
+                            </code>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'flow' && (
+                <div className="space-y-4">
+                  {/* Visual flow diagram */}
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(29, 31, 86, 0.03)' }}>
+                    {/* Row 1: unique_id creation */}
+                    <div className="flex items-center gap-3 mb-4 flex-wrap">
+                      <div className="flex gap-2">
+                        <code className="px-3 py-2 rounded text-sm font-bold" style={{ backgroundColor: `${colors.light}30`, border: `2px solid ${colors.light}` }}>item_id</code>
+                        <span className="text-xl font-bold" style={{ color: colors.gray }}>+</span>
+                        <code className="px-3 py-2 rounded text-sm font-bold" style={{ backgroundColor: `${colors.light}30`, border: `2px solid ${colors.light}` }}>store_id</code>
+                      </div>
+                      <ArrowRight className="w-6 h-6" style={{ color: colors.accent }} />
+                      <code className="px-3 py-2 rounded text-sm font-bold text-white" style={{ backgroundColor: colors.primary }}>unique_id</code>
+                      <span className="text-sm text-gray-500 ml-2">FOODS_3_090 + CA_1 → FOODS_3_090_CA_1</span>
+                    </div>
+
+                    {/* Row 2: ds creation */}
+                    <div className="flex items-center gap-3 mb-4 flex-wrap">
+                      <div className="flex gap-2 items-center">
+                        <code className="px-3 py-2 rounded text-sm font-bold" style={{ backgroundColor: `${colors.dark}20`, border: `2px solid ${colors.dark}` }}>d_1...d_1941</code>
+                        <span className="text-xl font-bold" style={{ color: colors.gray }}>+</span>
+                        <code className="px-3 py-2 rounded text-sm font-bold" style={{ backgroundColor: `${colors.accent}20`, border: `2px solid ${colors.accent}` }}>calendar.date</code>
+                      </div>
+                      <ArrowRight className="w-6 h-6" style={{ color: colors.accent }} />
+                      <code className="px-3 py-2 rounded text-sm font-bold text-white" style={{ backgroundColor: colors.accent }}>ds</code>
+                      <span className="text-sm text-gray-500 ml-2">d_1 → 2011-01-29</span>
+                    </div>
+
+                    {/* Row 3: y creation */}
+                    <div className="flex items-center gap-3 mb-4 flex-wrap">
+                      <code className="px-3 py-2 rounded text-sm font-bold" style={{ backgroundColor: `${colors.dark}20`, border: `2px solid ${colors.dark}` }}>d_X value</code>
+                      <ArrowRight className="w-6 h-6" style={{ color: colors.accent }} />
+                      <code className="px-3 py-2 rounded text-sm font-bold text-white" style={{ backgroundColor: colors.dark }}>y</code>
+                      <span className="text-sm text-gray-500 ml-2">The actual sales count (3, 0, 2, ...)</span>
+                    </div>
+
+                    {/* Row 4: Static features */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex gap-2">
+                        <code className="px-3 py-2 rounded text-sm" style={{ backgroundColor: 'rgba(139, 139, 139, 0.1)' }}>dept_id</code>
+                        <code className="px-3 py-2 rounded text-sm" style={{ backgroundColor: 'rgba(139, 139, 139, 0.1)' }}>cat_id</code>
+                        <code className="px-3 py-2 rounded text-sm" style={{ backgroundColor: 'rgba(139, 139, 139, 0.1)' }}>state_id</code>
+                      </div>
+                      <ArrowRight className="w-6 h-6" style={{ color: colors.gray }} />
+                      <span className="text-sm" style={{ color: colors.gray }}>Passed through as static features</span>
+                    </div>
+                  </div>
+
+                  {/* Shape transformation note */}
+                  <div className="flex items-center gap-4 p-4 rounded-lg" style={{ backgroundColor: `${colors.primary}10`, border: `1px solid ${colors.primary}` }}>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold" style={{ color: colors.dark }}>30,490</div>
+                      <div className="text-xs text-gray-500">rows</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold" style={{ color: colors.gray }}>×</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold" style={{ color: colors.dark }}>1,941</div>
+                      <div className="text-xs text-gray-500">d_X cols</div>
+                    </div>
+                    <ArrowRight className="w-8 h-8" style={{ color: colors.accent }} />
+                    <div className="text-center">
+                      <div className="text-2xl font-bold" style={{ color: colors.primary }}>59,181,490</div>
+                      <div className="text-xs text-gray-500">rows (long format)</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Hover hint */}
+              <div className="mt-4 text-xs text-center" style={{ color: colors.gray }}>
+                💡 Hover over any field to see its mapping relationship
+              </div>
+            </div>
+          );
+        };
+
+        // ==================== RESHAPE TAB (with TSForge emphasis) ====================
+        const ReshapeTab = ({ setActiveTab }) => {
+
+          return (
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <p className="text-gray-700 text-lg">Forecasting libraries expect a specific format. TSForge's <code className="bg-gray-100 px-2 py-1 rounded">load_m5()</code> handles this transformation automatically.</p>
+              </div>
+
+              {/* TSForge Callout */}
+              <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: `${colors.success}10`, border: `2px solid ${colors.success}` }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-2xl">🚀</span>
+                  <span className="font-bold text-lg" style={{ color: colors.dark }}>TSForge Does This For You</span>
+                </div>
+                <div className="bg-gray-900 rounded-lg p-4 mb-4">
+                  <code className="text-green-400 text-sm">
+                    <span className="text-purple-400">from</span> tsforge.data <span className="text-purple-400">import</span> load_m5<br/><br/>
+                    <span className="text-gray-500"># One line does all the transformation!</span><br/>
+                    df = load_m5()
+                  </code>
+                </div>
+                <div className="text-sm text-gray-700">
+                  <div className="font-bold mb-2" style={{ color: colors.success }}>What load_m5() handles automatically:</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div>✅ Creates <code className="bg-white px-1 rounded">unique_id</code> from item_id + store_id</div>
+                    <div>✅ Melts wide format to long format</div>
+                    <div>✅ Joins calendar to convert d_X → actual dates</div>
+                    <div>✅ Renames sales values to <code className="bg-white px-1 rounded">y</code></div>
+                    <div>✅ Preserves static features (dept_id, cat_id, state_id)</div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 rounded-lg bg-white text-sm">
+                  💡 Understanding the transformation helps you debug issues and customize for your needs.
+                </div>
+              </div>
+
+              {/* Interactive Field Mapping - Using the original TransformationVisualizer */}
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <h3 className="text-xl font-bold mb-4" style={{ color: colors.dark }}>Interactive Schema Mapping</h3>
+                <TransformationVisualizer />
+              </div>
+
+              {/* Before/After Tables */}
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <h3 className="text-xl font-bold mb-4" style={{ color: colors.dark }}>Before & After: Actual Data</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-3 py-1 rounded text-sm font-bold text-white bg-gray-500">BEFORE</span>
+                      <span className="text-sm text-gray-500">Wide format (1 row per item-store)</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="text-xs w-full border-collapse">
+                        <thead><tr className="bg-gray-100"><th className="border p-2">item_id</th><th className="border p-2">store_id</th><th className="border p-2">dept_id</th><th className="border p-2">d_1</th><th className="border p-2">d_2</th><th className="border p-2">d_3</th><th className="border p-2 text-gray-400">...</th></tr></thead>
+                        <tbody>
+                          <tr><td className="border p-2">FOODS_3_090</td><td className="border p-2">CA_1</td><td className="border p-2">FOODS_3</td><td className="border p-2 text-center font-bold">3</td><td className="border p-2 text-center font-bold">0</td><td className="border p-2 text-center font-bold">2</td><td className="border p-2 text-center text-gray-400">...</td></tr>
+                          <tr><td className="border p-2">FOODS_3_090</td><td className="border p-2">CA_2</td><td className="border p-2">FOODS_3</td><td className="border p-2 text-center font-bold">1</td><td className="border p-2 text-center font-bold">2</td><td className="border p-2 text-center font-bold">0</td><td className="border p-2 text-center text-gray-400">...</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-2">📊 30,490 rows × 1,947 columns</div>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-3 py-1 rounded text-sm font-bold text-white" style={{ backgroundColor: colors.success }}>AFTER</span>
+                      <span className="text-sm text-gray-500">Long format (1 row per observation)</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="text-xs w-full border-collapse">
+                        <thead><tr style={{ backgroundColor: `${colors.success}20` }}><th className="border p-2">unique_id</th><th className="border p-2">ds</th><th className="border p-2">y</th><th className="border p-2">dept_id</th></tr></thead>
+                        <tbody>
+                          <tr><td className="border p-2 font-mono">FOODS_3_090_CA_1</td><td className="border p-2">2011-01-29</td><td className="border p-2 text-center font-bold">3</td><td className="border p-2">FOODS_3</td></tr>
+                          <tr><td className="border p-2 font-mono">FOODS_3_090_CA_1</td><td className="border p-2">2011-01-30</td><td className="border p-2 text-center font-bold">0</td><td className="border p-2">FOODS_3</td></tr>
+                          <tr><td className="border p-2 font-mono">FOODS_3_090_CA_1</td><td className="border p-2">2011-01-31</td><td className="border p-2 text-center font-bold">2</td><td className="border p-2">FOODS_3</td></tr>
+                          <tr className="text-gray-400"><td className="border p-2 text-center" colSpan="4">... 59M+ more rows ...</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="text-xs mt-2" style={{ color: colors.success }}>📊 59,181,490 rows × ~6 columns</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Why This Matters */}
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <h3 className="text-lg font-bold mb-3" style={{ color: colors.dark }}>Why This Transformation Matters</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: colors.success }} />
+                    <div><div className="font-semibold">Standard Schema = Portable Code</div><div className="text-gray-600">The (unique_id, ds, y) format works with Nixtla, statsforecast, Prophet, and most libraries.</div></div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: colors.success }} />
+                    <div><div className="font-semibold">Long Format = Proper Time Series</div><div className="text-gray-600">Each row is one observation. Enables lag features, rolling windows, and temporal validation.</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <TransitionCTA text="Use the cheat sheet to validate your work" onClick={() => setActiveTab('cheatsheet')} />
+            </div>
+          );
+        };
+
+        // ==================== CHEAT SHEET TAB (original design) ====================
+        const CheatSheetTab = ({ setActiveTab }) => {
+          return (
+            <div className="space-y-6">
+              {/* Complete M5 Column Reference */}
+              <div className="bg-white rounded-xl p-8 shadow-lg">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">📋 Complete M5 Column Reference</h2>
+                <p className="text-gray-700 mb-6">
+                  Use this as your quick reference when building features. Every single column in the M5 dataset 
+                  is classified here by type. Bookmark this page and refer back when you're unsure about a field's availability.
+                </p>
+                
+                <div className="space-y-6">
+                  {/* Static Columns */}
+                  <div className="p-5 rounded-lg" style={{ borderLeft: `4px solid ${colors.light}`, backgroundColor: `${colors.light}15` }}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle className="w-5 h-5" style={{ color: colors.primary }} />
+                      <h4 className="text-lg font-bold" style={{ color: colors.dark }}>STATIC Columns (5 total)</h4>
+                    </div>
+                    <div className="text-sm mb-3" style={{ color: colors.primary }}>
+                      ✓ Never change over time • ✓ Safe to join anytime • ✓ No leakage risk
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                      {['item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'].map(col => (
+                        <code key={col} className="bg-white px-3 py-2 rounded text-xs font-bold text-center" style={{ border: `2px solid ${colors.light}`, color: colors.dark }}>
+                          {col}
+                        </code>
+                      ))}
+                    </div>
+                    <div className="text-xs mt-3 italic" style={{ color: colors.primary }}>
+                      Found in: sales_train.csv (all 5), sell_prices.csv (item_id, store_id)
+                    </div>
+                  </div>
+
+                  {/* Known-At-Time Columns */}
+                  <div className="p-5 rounded-lg" style={{ borderLeft: `4px solid ${colors.purple}`, backgroundColor: `${colors.purple}10` }}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Calendar className="w-5 h-5" style={{ color: colors.purple }} />
+                      <h4 className="text-lg font-bold" style={{ color: colors.dark }}>KNOWN-AT-TIME Columns (11 total)</h4>
+                    </div>
+                    <div className="text-sm mb-3" style={{ color: colors.purple }}>
+                      ✓ Known in advance • ✓ Safe for forecasting • ✓ Calendar-based
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {['date', 'wday', 'weekday', 'month', 'year', 'event_name_1', 'event_type_1', 'event_name_2', 'event_type_2', 'snap_CA', 'snap_TX', 'snap_WI'].map(col => (
+                        <code key={col} className="bg-white px-3 py-2 rounded text-xs font-bold text-center" style={{ border: `2px solid ${colors.purple}`, color: colors.dark }}>
+                          {col}
+                        </code>
+                      ))}
+                    </div>
+                    <div className="text-xs mt-3 italic" style={{ color: colors.purple }}>
+                      Found in: calendar.csv (all fields except wm_yr_wk which is used for joining)
+                    </div>
+                  </div>
+
+                  {/* Dynamic (Unknown) Columns */}
+                  <div className="p-5 rounded-lg" style={{ borderLeft: `4px solid ${colors.accent}`, backgroundColor: `${colors.accent}10` }}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertTriangle className="w-5 h-5" style={{ color: colors.accent }} />
+                      <h4 className="text-lg font-bold" style={{ color: colors.dark }}>DYNAMIC (Unknown) Columns (2 total)</h4>
+                    </div>
+                    <div className="text-sm mb-3" style={{ color: colors.accent }}>
+                      ⚠️ Changes over time • ⚠️ NOT known at forecast time • ⚠️ HIGH leakage risk
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['sell_price', 'wm_yr_wk'].map(col => (
+                        <code key={col} className="bg-white px-3 py-2 rounded text-xs font-bold text-center" style={{ border: `2px solid ${colors.accent}`, color: colors.dark }}>
+                          {col}
+                        </code>
+                      ))}
+                    </div>
+                    <div className="text-xs mt-3 italic" style={{ color: colors.accent }}>
+                      Found in: sell_prices.csv (both), calendar.csv (wm_yr_wk - used as join key)
+                    </div>
+                    <div className="rounded p-3 mt-3" style={{ backgroundColor: `${colors.accent}15`, border: `1px solid ${colors.accent}` }}>
+                      <div className="text-xs font-bold mb-1" style={{ color: colors.dark }}>🚨 CRITICAL WARNING</div>
+                      <div className="text-xs" style={{ color: colors.accent }}>
+                        <strong>sell_price</strong> is THE most dangerous column in M5. You CANNOT use future prices. 
+                        Use lagged prices, planned promotional prices, or price forecasts instead.
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Target Columns */}
+                  <div className="p-5 rounded-lg" style={{ borderLeft: `4px solid ${colors.dark}`, backgroundColor: `${colors.dark}10` }}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertTriangle className="w-5 h-5" style={{ color: colors.dark }} />
+                      <h4 className="text-lg font-bold" style={{ color: colors.dark }}>TARGET Columns (1,941 total)</h4>
+                    </div>
+                    <div className="text-sm mb-3" style={{ color: colors.purple }}>
+                      🎯 What you're predicting • ⚠️ Can use past as lags • ⚠️ NEVER use future values
+                    </div>
+                    <div className="bg-white px-4 py-3 rounded" style={{ border: `2px solid ${colors.dark}` }}>
+                      <code className="text-sm font-bold" style={{ color: colors.dark }}>
+                        d_1, d_2, d_3, ..., d_1939, d_1940, d_1941
+                      </code>
+                      <div className="text-xs mt-2" style={{ color: colors.purple }}>
+                        Daily unit sales from 2011-01-29 through 2016-06-19 (1,941 days)
+                      </div>
+                    </div>
+                    <div className="text-xs mt-3 italic" style={{ color: colors.purple }}>
+                      Found in: sales_train.csv (1,941 columns, one per day)
+                    </div>
+                    <div className="rounded p-3 mt-3" style={{ backgroundColor: `${colors.danger}10`, border: `1px solid ${colors.danger}` }}>
+                      <div className="text-xs font-bold mb-1" style={{ color: colors.danger }}>🚨 LEAKAGE EXAMPLE</div>
+                      <div className="text-xs" style={{ color: '#8b0000' }}>
+                        To forecast <strong>d_100</strong>, you can ONLY use <strong>d_1...d_99</strong> as features. 
+                        Using d_100 or any future d_X values is data leakage and will cause production failure.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-lg p-4" style={{ backgroundColor: `${colors.primary}10`, border: `2px solid ${colors.primary}` }}>
+                  <div className="text-sm font-bold mb-2" style={{ color: colors.dark }}>💡 Quick Reference Summary</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs" style={{ color: colors.accent }}>
+                    <div><strong>Total columns:</strong> 1,959 (5 static + 11 known-at + 2 dynamic + 1,941 target)</div>
+                    <div><strong>Safe to use:</strong> Static + Known-At-Time = 16 columns</div>
+                    <div><strong>Requires care:</strong> Dynamic (2) - must use lags or plans</div>
+                    <div><strong>Target only:</strong> d_1...d_1941 - can create lag features from past values</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Decision Tree */}
+              <div className="rounded-xl p-8 shadow-lg" style={{ background: 'linear-gradient(135deg, rgba(83, 180, 230, 0.1) 0%, rgba(45, 66, 167, 0.1) 100%)', border: `4px solid ${colors.accent}` }}>
+                <h3 className="text-2xl font-bold mb-6" style={{ color: colors.dark }}>🎯 Decision Tree: Can I Use This Column?</h3>
+                
+                <div className="space-y-4">
+                  <div className="bg-white rounded-lg p-5" style={{ border: `2px solid ${colors.light}` }}>
+                    <div className="font-bold text-lg mb-2" style={{ color: colors.dark }}>✅ YES - Use it directly</div>
+                    <div className="text-sm mb-2" style={{ color: colors.gray }}>
+                      <strong>If the column is:</strong>
+                    </div>
+                    <ul className="text-sm space-y-1 ml-4" style={{ color: colors.accent }}>
+                      <li>• Any of the 5 STATIC columns (item_id, dept_id, cat_id, store_id, state_id)</li>
+                      <li>• Any of the 11 KNOWN-AT-TIME columns from calendar.csv</li>
+                      <li>• A date-derived feature (weekday, month, year, etc.)</li>
+                    </ul>
+                    <div className="text-xs mt-2 italic" style={{ color: colors.light }}>
+                      These 16 columns are always safe. No special handling needed.
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg p-5" style={{ border: `2px solid ${colors.accent}` }}>
+                    <div className="font-bold text-lg mb-2" style={{ color: colors.dark }}>⚠️ MAYBE - Use with care</div>
+                    <div className="text-sm mb-2" style={{ color: colors.gray }}>
+                      <strong>If the column is:</strong>
+                    </div>
+                    <ul className="text-sm space-y-1 ml-4" style={{ color: colors.accent }}>
+                      <li>• <strong>sell_price</strong> - Use LAGGED values (last week's price) or PLANNED promotional prices</li>
+                      <li>• <strong>wm_yr_wk</strong> - Only use for joining; validate temporal ordering</li>
+                      <li>• <strong>d_X (past values)</strong> - Can create LAG features (d_t-1, d_t-7, etc.) but verify temporal split</li>
+                    </ul>
+                    <div className="text-xs mt-2 italic" style={{ color: colors.accent }}>
+                      These require explicit temporal handling. Document your assumptions.
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg p-5" style={{ border: `2px solid ${colors.danger}` }}>
+                    <div className="font-bold text-lg mb-2" style={{ color: colors.dark }}>❌ NO - Do not use</div>
+                    <div className="text-sm mb-2" style={{ color: colors.gray }}>
+                      <strong>If the column is:</strong>
+                    </div>
+                    <ul className="text-sm space-y-1 ml-4" style={{ color: colors.danger }}>
+                      <li>• <strong>sell_price</strong> for FUTURE weeks - You don't know next week's actual price</li>
+                      <li>• <strong>d_X</strong> where X ≥ forecast date - You can't use the future to predict the future</li>
+                      <li>• Any value that would require "peeking" into the future</li>
+                    </ul>
+                    <div className="text-xs mt-2 italic" style={{ color: colors.danger }}>
+                      This is data leakage. Models will look great in validation but fail in production.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Common Leakage Patterns */}
+              <div className="bg-white rounded-xl p-8 shadow-lg">
+                <h3 className="text-2xl font-bold mb-6" style={{ color: colors.dark }}>🚨 Common Leakage Patterns to Avoid</h3>
+                
+                <div className="space-y-4">
+                  <div className="flex gap-4 items-start p-4 rounded" style={{ backgroundColor: `${colors.danger}10`, borderLeft: `4px solid ${colors.danger}` }}>
+                    <div className="text-2xl">❌</div>
+                    <div>
+                      <div className="font-bold mb-1" style={{ color: colors.danger }}>Joining prices without time constraint</div>
+                      <code className="text-xs px-2 py-1 rounded block mb-2" style={{ backgroundColor: `${colors.danger}15`, color: '#8b0000' }}>
+                        df.merge(prices, on=['item_id', 'store_id', 'wm_yr_wk'])  # WRONG
+                      </code>
+                      <div className="text-sm" style={{ color: '#8b0000' }}>
+                        This joins ALL prices, including future prices. Always filter prices to ≤ forecast_date.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 items-start p-4 rounded" style={{ backgroundColor: `${colors.danger}10`, borderLeft: `4px solid ${colors.danger}` }}>
+                    <div className="text-2xl">❌</div>
+                    <div>
+                      <div className="font-bold mb-1" style={{ color: colors.danger }}>Using current period sales as feature</div>
+                      <code className="text-xs px-2 py-1 rounded block mb-2" style={{ backgroundColor: `${colors.danger}15`, color: '#8b0000' }}>
+                        train_df['y'] = train_df['d_100']  # Predicting d_100<br/>
+                        train_df['feature'] = train_df['d_100']  # WRONG - using same day
+                      </code>
+                      <div className="text-sm" style={{ color: '#8b0000' }}>
+                        You can't know d_100's sales when forecasting d_100. Only use d_1...d_99.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 items-start p-4 rounded" style={{ backgroundColor: `${colors.danger}10`, borderLeft: `4px solid ${colors.danger}` }}>
+                    <div className="text-2xl">❌</div>
+                    <div>
+                      <div className="font-bold mb-1" style={{ color: colors.danger }}>Rolling window that includes future</div>
+                      <code className="text-xs px-2 py-1 rounded block mb-2" style={{ backgroundColor: `${colors.danger}15`, color: '#8b0000' }}>
+                        df['rolling_mean_7'] = df['y'].rolling(7, center=True).mean()  # WRONG
+                      </code>
+                      <div className="text-sm" style={{ color: '#8b0000' }}>
+                        center=True uses future values. Use center=False or min_periods to look backward only.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 items-start p-4 rounded" style={{ backgroundColor: `${colors.light}15`, borderLeft: `4px solid ${colors.light}` }}>
+                    <div className="text-2xl">✅</div>
+                    <div>
+                      <div className="font-bold mb-1" style={{ color: colors.primary }}>Correct lag feature creation</div>
+                      <code className="text-xs px-2 py-1 rounded block mb-2" style={{ backgroundColor: `${colors.light}20`, color: colors.dark }}>
+                        df['lag_1'] = df.groupby('unique_id')['y'].shift(1)  # Previous day<br/>
+                        df['lag_7'] = df.groupby('unique_id')['y'].shift(7)  # Same day last week
+                      </code>
+                      <div className="text-sm" style={{ color: colors.primary }}>
+                        shift() creates proper lags. For d_100, lag_1 gives you d_99, which is safe.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // ==================== MAIN APP ====================
+        const M5DatasetExplorer = () => {
+          const [activeTab, setActiveTab] = useState('raw');
+
+          return (
+            <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-6">
+              <div className="max-w-5xl mx-auto">
+                <div className="rounded-2xl p-6 text-white mb-6 shadow-xl" style={{ background: `linear-gradient(135deg, ${colors.dark} 0%, ${colors.purple} 50%, ${colors.primary} 100%)` }}>
+                  <h1 className="text-3xl font-bold">Module 1.7: Understanding the M5 Dataset</h1>
+                  <p className="text-sm opacity-80 mt-2">From raw files to forecast-ready format</p>
+                </div>
+
+                <JourneyHeader activeTab={activeTab} setActiveTab={setActiveTab} />
+
+                {activeTab === 'raw' && <RawDataTab setActiveTab={setActiveTab} />}
+                {activeTab === 'vocabulary' && <VocabularyTab setActiveTab={setActiveTab} />}
+                {activeTab === 'explore' && <ExploreTab setActiveTab={setActiveTab} />}
+                {activeTab === 'transform' && <ReshapeTab setActiveTab={setActiveTab} />}
+                {activeTab === 'cheatsheet' && <CheatSheetTab setActiveTab={setActiveTab} />}
+              </div>
+            </div>
+          );
+        };
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<M5DatasetExplorer />);
     </script>
