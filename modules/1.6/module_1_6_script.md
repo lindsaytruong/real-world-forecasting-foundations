@@ -1,5 +1,5 @@
 # Module 1.6: First Contact with the Data
-## Video Tutorial Script — Detailed Narration
+## Script 
 
 ---
 
