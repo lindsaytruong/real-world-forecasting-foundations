@@ -284,7 +284,7 @@ def has_m5_cache(data_dir: Path) -> bool:
     ]
 
     # Also check common subdirectories and nested paths
-    cache_subdirs = ['m5', 'M5', 'm5-forecasting-accuracy', 'm5/datasets', 'M5/datasets']
+    cache_subdirs = ['cache', 'm5', 'M5', 'm5-forecasting-accuracy', 'm5/datasets', 'M5/datasets']
 
     # Check main directory
     if any((data_dir / f).exists() for f in cache_files):
@@ -838,8 +838,10 @@ def messify_m5_data(
     # Generate cache filename based on parameters
     if cache_dir is not None:
         cache_dir = Path(cache_dir)
-        cache_dir.mkdir(exist_ok=True, parents=True)
-        
+        # Save cached data to a 'cache' subfolder within the data directory
+        cache_subdir = cache_dir / 'cache'
+        cache_subdir.mkdir(exist_ok=True, parents=True)
+
         # Create filename that reflects the messification parameters
         n_series = df[id_col].nunique()
         cache_filename = (
@@ -854,7 +856,7 @@ def messify_m5_data(
             f"dtype{1 if dtypes_corrupt else 0}"
             f".parquet"
         )
-        cache_path = cache_dir / cache_filename
+        cache_path = cache_subdir / cache_filename
         
         # Check if cache exists and should be used
         if cache_path.exists() and not force_refresh:
