@@ -117,25 +117,15 @@ poetry.lock
 # 📦 Data (Prevent GitHub Large File Issues!)
 ###############################################################################
 
-# Ignore all raw, interim, and processed data — these may be very large.
-# Students download data via download_data.py.
-data/raw/*
-#data/interim/*
-#data/processed/* #remove after development
+# Ignore all data file contents but preserve folder structure via .gitkeep
+data/**
+!data/**/
+!data/**/.gitkeep
 
-# Allow directory placeholders
-!data/raw/.gitkeep
-!data/interim/.gitkeep
-!data/processed/.gitkeep
-
-# Ignore downloaded artifacts by default (students download these)
-data/artifacts/*
-!data/artifacts/.gitkeep
-
-# EXCEPTION:
-# Instructors may want to include precomputed sample artifacts
-# If so, manually un-ignore a specific file like:
-# !data/artifacts/module_01/1_8_diagnostics.parquet
+# Per-module data directories
+notebooks/*/data/**
+!notebooks/*/data/**/
+!notebooks/*/data/**/.gitkeep
 
 ###############################################################################
 # 📁 Outputs & Cache
@@ -182,11 +172,3 @@ Thumbs.db
 *.zip
 *.tar.gz
 
-# Shared raw data
-data/m5/
-
-# Per-module data (all modules)
-notebooks/*/data/cache/
-notebooks/*/data/outputs/*.parquet
-notebooks/*/data/outputs/*.json
-!notebooks/*/data/outputs/cache_manifest.json
