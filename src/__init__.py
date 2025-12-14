@@ -45,9 +45,24 @@ from .features import aggregate_calendar_to_weekly
 from .cache.cache import CacheManager, ArtifactManager
 
 # =============================================================================
-# Reporting
+# Reporting & Analysis
 # =============================================================================
 from .analysis.reports import first_contact_check, FirstContactReport
+from .analysis.profile import (
+    acf_summary,
+    profile_series,
+    profile_dataframe,
+    summarize_profiles,
+    interpret_strength,
+    calc_stl_strength,
+    calc_acf_metrics,
+    calc_intermittency_metrics,
+    calc_distribution_metrics,
+    calc_volatility_metrics,
+    calc_outlier_metrics,
+    ADI_THRESHOLD,
+    CV2_THRESHOLD,
+)
 
 # =============================================================================
 # Helpers
@@ -80,9 +95,21 @@ __all__ = [
     # Cache
     'CacheManager',
     'ArtifactManager',
-    # Report
+    # Report & Analysis
     'first_contact_check',
     'FirstContactReport',
+    'profile_series',
+    'profile_dataframe',
+    'summarize_profiles',
+    'interpret_strength',
+    'calc_stl_strength',
+    'calc_acf_metrics',
+    'calc_intermittency_metrics',
+    'calc_distribution_metrics',
+    'calc_volatility_metrics',
+    'calc_outlier_metrics',
+    'ADI_THRESHOLD',
+    'CV2_THRESHOLD',
     # Helpers
     'find_project_root',
     'get_notebook_name',
