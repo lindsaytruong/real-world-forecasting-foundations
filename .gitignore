@@ -103,6 +103,12 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Claude Code
+.claude/
+
+# Lock files (regenerated from pyproject.toml)
+poetry.lock
+
 ###############################################################################
 # 🧠 FORECAST ACADEMY COURSE-SPECIFIC IGNORE RULES
 ###############################################################################
@@ -167,8 +173,20 @@ site/
 ###############################################################################
 
 .DS_Store
+**/.DS_Store
 Thumbs.db
 *.tmp
 *.bak
 *.swp
 *.swo
+*.zip
+*.tar.gz
+
+# Shared raw data
+data/m5/
+
+# Per-module data (all modules)
+notebooks/*/data/cache/
+notebooks/*/data/outputs/*.parquet
+notebooks/*/data/outputs/*.json
+!notebooks/*/data/outputs/cache_manifest.json
