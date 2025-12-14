@@ -21,7 +21,7 @@ Quick Start:
 # =============================================================================
 # Data Loading
 # =============================================================================
-from .adapters import (
+from .loaders import (
     # Loading
     load_m5,
     load_m5_with_feedback,
