@@ -103,6 +103,12 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Claude Code
+.claude/
+
+# Lock files (regenerated from pyproject.toml)
+poetry.lock
+
 ###############################################################################
 # 🧠 FORECAST ACADEMY COURSE-SPECIFIC IGNORE RULES
 ###############################################################################
@@ -111,29 +117,22 @@ cython_debug/
 # 📦 Data (Prevent GitHub Large File Issues!)
 ###############################################################################
 
-# Ignore all raw, interim, and processed data — these may be very large.
-# Students download data via download_data.py.
-data/raw/*
-#data/interim/*
-#data/processed/* #remove after development
+# Ignore all data file contents but preserve folder structure via .gitkeep
+data/**
+!data/**/
+!data/**/.gitkeep
 
-# Allow directory placeholders
-!data/raw/.gitkeep
-!data/interim/.gitkeep
-!data/processed/.gitkeep
-
-# Ignore downloaded artifacts by default (students download these)
-data/artifacts/*
-!data/artifacts/.gitkeep
-
-# EXCEPTION:
-# Instructors may want to include precomputed sample artifacts
-# If so, manually un-ignore a specific file like:
-# !data/artifacts/module_01/1_8_diagnostics.parquet
+# Per-module data directories
+notebooks/*/data/**
+!notebooks/*/data/**/
+!notebooks/*/data/**/.gitkeep
 
 ###############################################################################
 # 📁 Outputs & Cache
 ###############################################################################
+
+# Project cache (intermediate/messified data)
+.cache/
 
 # Notebook auto-saves
 *.ipynb_checkpoints
@@ -143,7 +142,18 @@ data/artifacts/*
 outputs/
 plots/
 figures/
-reports/
+
+###############################################################################
+# 📊 Artifacts (Curriculum Outputs)
+###############################################################################
+
+# Ignore parquet data files (large), but keep folder structure
+artifacts/*/output/*
+!artifacts/*/output/.gitkeep
+
+# Track reports and .gitkeep files
+!artifacts/*/reports/
+!artifacts/.gitkeep
 
 ###############################################################################
 # 🔧 tsforge Build & Course Glue
@@ -167,8 +177,13 @@ site/
 ###############################################################################
 
 .DS_Store
+**/.DS_Store
 Thumbs.db
 *.tmp
 *.bak
 *.swp
 *.swo
+*.zip
+*.tar.gz
+*.json
+

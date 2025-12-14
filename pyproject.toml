@@ -40,7 +40,7 @@ catboost = "^1.2.7"
 pyarrow = "17.0.0"
 joblib = "^1.4.2"
 nolds = "^0.6.2"
-tsforge = {path = "/Users/jackrodenberg/Desktop/tsforge-1", develop = true}
+tsforge = ">=0.1.0"
 
 [tool.poetry.extras]
 cli = ["typer", "rich"]
