@@ -151,10 +151,8 @@ figures/
 artifacts/*/output/*
 !artifacts/*/output/.gitkeep
 
-# Track reports, manifests, and .gitkeep files
+# Track reports and .gitkeep files
 !artifacts/*/reports/
-!artifacts/*/manifest.json
-!artifacts/manifest.json
 !artifacts/.gitkeep
 
 ###############################################################################
