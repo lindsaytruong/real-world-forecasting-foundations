@@ -29,7 +29,7 @@ from ..utils.helpers import (
 )
 
 if TYPE_CHECKING:
-    from ..analysis.reports import FirstContactReport
+    from ..analysis.reports import ModuleReport
 
 
 MANIFEST_FILENAME = 'cache_manifest.json'
@@ -130,7 +130,7 @@ class CacheManager:
         config: Optional[Dict[str, Any]] = None,
         module: Optional[str] = None,
         source: Optional[str] = None,
-        report: Optional['FirstContactReport'] = None,
+        report: Optional['ModuleReport'] = None,
         report_format: str = 'md',
         inherit_config: bool = True,
         overwrite: Optional[bool] = None
@@ -150,7 +150,7 @@ class CacheManager:
             Module identifier. Auto-detects from notebook.
         source : str, optional
             Parent cache key. Auto-detects from last load.
-        report : FirstContactReport, optional
+        report : ModuleReport, optional
             Report to save alongside data
         report_format : str, default='md'
             Report output format: 'md' (markdown), 'txt' (plain text), 'pdf', or 'html'
@@ -272,7 +272,7 @@ class CacheManager:
         Returns
         -------
         pd.DataFrame or tuple
-            Data, or (data, FirstContactReport) if with_report=True
+            Data, or (data, ModuleReport) if with_report=True
         """
         if key not in self._manifest:
             if verbose:
@@ -311,8 +311,8 @@ class CacheManager:
             if entry.get('report_filename'):
                 report_path = self.cache_dir / entry['report_filename']
                 if report_path.exists():
-                    from ..analysis.reports import FirstContactReport
-                    report_obj = FirstContactReport.load(report_path)
+                    from ..analysis.reports import ModuleReport
+                    report_obj = ModuleReport.load(report_path)
                     if verbose:
                         print(f"   Report: ✓")
             return df, report_obj
@@ -497,7 +497,7 @@ class ArtifactManager:
         key: Optional[str] = None,
         config: Optional[Dict[str, Any]] = None,
         source: Optional[str] = None,
-        report: Optional['FirstContactReport'] = None,
+        report: Optional['ModuleReport'] = None,
         report_format: str = 'md',
     ) -> Path:
         """
@@ -513,7 +513,7 @@ class ArtifactManager:
             Config metadata to store
         source : str, optional
             Source artifact key for lineage. Auto-detects from last load.
-        report : FirstContactReport, optional
+        report : ModuleReport, optional
             Report to save alongside data
         report_format : str, default='md'
             Report output format: 'md' (markdown), 'txt' (plain text), 'pdf', or 'html'
@@ -608,8 +608,8 @@ class ArtifactManager:
             if entry.get('report_file'):
                 report_path = self.outputs_dir / entry['report_file']
                 if report_path.exists():
-                    from ..analysis.reports import FirstContactReport
-                    report_obj = FirstContactReport.load(report_path)
+                    from ..analysis.reports import ModuleReport
+                    report_obj = ModuleReport.load(report_path)
                     print(f"   Report: ✓")
             return df, report_obj
 

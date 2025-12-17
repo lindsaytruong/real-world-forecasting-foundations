@@ -601,8 +601,8 @@ class ModuleReport:
         lines.append(self._section_header("SNAPSHOT"))
         lines.append(self.sample_df.head(3).to_string(index=False))
         
-        # Structure
-        lines.append(self._section_header("STRUCTURE"))
+        # Data Summary
+        lines.append(self._section_header("DATA SUMMARY"))
         lines.append(f"  {'Rows':<15} {self.output.rows:,}")
         lines.append(f"  {'Series':<15} {self.output.series:,}")
         lines.append(f"  {'Dates':<15} {self.output.date_min} → {self.output.date_max}")
@@ -733,8 +733,8 @@ class ModuleReport:
         lines.append(self.sample_df.head(3).to_string(index=False))
         lines.append("```")
 
-        # Structure
-        lines.append("\n## Structure\n")
+        # Data Summary
+        lines.append("\n## Data Summary\n")
         lines.append("| Metric | Value |")
         lines.append("|--------|-------|")
         lines.append(f"| Rows | {self.output.rows:,} |")
@@ -904,6 +904,349 @@ class ModuleReport:
         html_content = self.to_html()
         HTML(string=html_content).write_pdf(path)
         print(f"✓ Report saved: {path}")
+
+    @classmethod
+    def load(cls, path: str) -> 'ModuleReport':
+        """
+        Load a saved report from file.
+
+        Parameters
+        ----------
+        path : str
+            Path to saved report file (.txt, .md, .html)
+
+        Returns
+        -------
+        ModuleReport
+            A minimal report object with parsed summary data
+        """
+        path = Path(path)
+
+        with open(path, 'r') as f:
+            content = f.read()
+
+        # Create a minimal report-like object
+        report = object.__new__(cls)
+        report._raw_content = content
+        report.module = "loaded"
+        report.module_title = ""
+        report.generated_at = ""
+        report.sections = []
+        report.decisions_df = None
+        report._decisions_md = None
+
+        # Parse all sections from content
+        parsed = cls._parse_all_sections(content)
+        report._parsed_summary = parsed.get('summary', {})
+        report._parsed_snapshot = parsed.get('snapshot', "")
+        report._parsed_memory = parsed.get('memory', {})
+        report._parsed_checks = parsed.get('checks', {})
+        report._parsed_timeline = parsed.get('timeline', {})
+        report._parsed_blocking = parsed.get('blocking', [])
+        report._parsed_decisions = parsed.get('decisions', "")
+        report._parsed_changes = parsed.get('changes', {})
+
+        # Create minimal Snapshot for output
+        report.output = Snapshot(
+            name="loaded",
+            rows=0, columns=0, series=0,
+            date_min="", date_max="",
+            n_weeks=0, frequency="",
+            target_zeros_pct=0.0, target_nas=0,
+            duplicates=0, memory_mb=0.0
+        )
+        report.input = report.output
+        report.sample_df = pd.DataFrame()
+        report.params = {}
+
+        return report
+
+    @staticmethod
+    def _parse_all_sections(content: str) -> dict:
+        """Parse all sections from saved report text."""
+        result = {
+            'summary': {},
+            'snapshot': "",
+            'memory': {},
+            'checks': {},
+            'timeline': {},
+            'blocking': [],
+            'decisions': "",
+            'changes': {},
+        }
+
+        lines = content.split('\n')
+        current_section = None
+        section_lines = []
+
+        section_markers = {
+            'SNAPSHOT': 'snapshot',
+            'DATA SUMMARY': 'summary',
+            'STRUCTURE': 'summary',
+            'MEMORY': 'memory',
+            '5Q CHECKS': 'checks',
+            'TIMELINE HEALTH': 'timeline',
+            'BLOCKING ISSUES': 'blocking',
+            'DECISIONS': 'decisions',
+            'CHANGES': 'changes',
+        }
+
+        for line in lines:
+            # Check for section header
+            new_section = None
+            for marker, section_name in section_markers.items():
+                if marker in line and '─' not in line:
+                    new_section = section_name
+                    break
+
+            if new_section:
+                # Save previous section
+                if current_section and section_lines:
+                    result[current_section] = ModuleReport._parse_section(current_section, section_lines)
+                current_section = new_section
+                section_lines = []
+            elif current_section and not line.startswith('─') and not line.startswith('━'):
+                section_lines.append(line)
+
+        # Save last section
+        if current_section and section_lines:
+            result[current_section] = ModuleReport._parse_section(current_section, section_lines)
+
+        return result
+
+    @staticmethod
+    def _parse_section(section_name: str, lines: List[str]):
+        """Parse a specific section from its lines."""
+        if section_name == 'snapshot':
+            return '\n'.join(line for line in lines if line.strip())
+
+        elif section_name == 'summary':
+            summary = {}
+            for line in lines:
+                if not line.strip():
+                    continue
+                parts = line.split()
+                if len(parts) >= 2:
+                    if 'Rows' in line:
+                        summary['Rows'] = parts[-1]
+                    elif 'Series' in line and 'per' not in line.lower():
+                        summary['Series'] = parts[-1]
+                    elif 'Dates' in line and '→' in line:
+                        idx = line.index('2') if '2' in line else -1
+                        if idx > 0:
+                            summary['Dates'] = line[idx:].strip()
+                    elif 'Frequency' in line:
+                        summary['Frequency'] = parts[-1]
+                    elif 'History' in line and len(parts) > 1:
+                        hist_start = line.find(parts[1])
+                        if hist_start > 0:
+                            summary['History'] = line[hist_start:].strip()
+                    elif 'Target zeros' in line or 'zeros' in line.lower():
+                        summary['Target zeros'] = parts[-1]
+            return summary
+
+        elif section_name == 'memory':
+            for line in lines:
+                if line.strip():
+                    # Parse "✓ 134 MB (Medium) — Fine for most operations"
+                    if 'MB' in line or 'GB' in line:
+                        parts = line.split()
+                        size = None
+                        tier = None
+                        for i, p in enumerate(parts):
+                            if p in ('MB', 'GB') and i > 0:
+                                try:
+                                    size = float(parts[i-1])
+                                    if p == 'GB':
+                                        size *= 1024
+                                except ValueError:
+                                    pass
+                            if p.startswith('(') and p.endswith(')'):
+                                tier = p[1:-1]
+                        note_idx = line.find('—')
+                        note = line[note_idx+1:].strip() if note_idx > 0 else ""
+                        return {'size_mb': size or 0, 'tier': tier or "", 'note': note}
+            return {}
+
+        elif section_name == 'checks':
+            # Return raw text for now - complex to parse
+            return '\n'.join(lines)
+
+        elif section_name == 'timeline':
+            for line in lines:
+                if 'Series/date' in line or 'series' in line.lower():
+                    # Parse "Series/date     6,979 – 30,490 (Variable)"
+                    parts = line.split()
+                    for i, p in enumerate(parts):
+                        if '–' in p or '-' in p:
+                            try:
+                                min_val = int(parts[i-1].replace(',', ''))
+                                max_val = int(parts[i+1].replace(',', ''))
+                                stable = 'Stable' in line
+                                return {'min_series': min_val, 'max_series': max_val, 'is_stable': stable}
+                            except (ValueError, IndexError):
+                                pass
+            return {}
+
+        elif section_name == 'blocking':
+            issues = []
+            for line in lines:
+                if line.strip() and '✗' in line:
+                    issues.append(line.strip().replace('✗', '').strip())
+            return issues
+
+        elif section_name == 'decisions':
+            return '\n'.join(line for line in lines if line.strip())
+
+        elif section_name == 'changes':
+            changes = {}
+            for line in lines:
+                if not line.strip():
+                    continue
+                if 'Rows' in line and '→' in line:
+                    parts = line.split()
+                    try:
+                        before = int(parts[1].replace(',', ''))
+                        after = int(parts[3].replace(',', ''))
+                        changes['rows'] = {'before': before, 'after': after}
+                    except (ValueError, IndexError):
+                        pass
+                elif 'NAs' in line and '→' in line:
+                    parts = line.split()
+                    try:
+                        before = int(parts[1].replace(',', ''))
+                        after = int(parts[3].replace(',', ''))
+                        changes['nas'] = {'before': before, 'after': after}
+                    except (ValueError, IndexError):
+                        pass
+                elif 'Frequency' in line and '→' in line:
+                    parts = line.split()
+                    try:
+                        before = parts[1]
+                        after = parts[3]
+                        changes['frequency'] = {'before': before, 'after': after}
+                    except IndexError:
+                        pass
+                elif 'Memory' in line and '→' in line:
+                    parts = line.split()
+                    try:
+                        before = float(parts[1])
+                        after = float(parts[4])
+                        changes['memory'] = {'before_mb': before, 'after_mb': after}
+                    except (ValueError, IndexError):
+                        pass
+            return changes
+
+        return None
+
+    @property
+    def summary(self) -> dict:
+        """Return the DATA SUMMARY section as a dictionary."""
+        if hasattr(self, '_parsed_summary') and self._parsed_summary:
+            return self._parsed_summary
+        return {
+            'Rows': f"{self.output.rows:,}",
+            'Series': f"{self.output.series:,}",
+            'Dates': f"{self.output.date_min} → {self.output.date_max}",
+            'Frequency': self.output.frequency,
+            'History': f"{self.output.n_weeks} weeks ({self.output.n_weeks/52:.1f} yrs)",
+            'Target zeros': f"{self.output.target_zeros_pct:.1f}%",
+        }
+
+    @property
+    def snapshot(self) -> str:
+        """Return the SNAPSHOT section (sample data preview)."""
+        if hasattr(self, '_parsed_snapshot') and self._parsed_snapshot:
+            return self._parsed_snapshot
+        return self.sample_df.head(3).to_string(index=False)
+
+    @property
+    def memory(self) -> dict:
+        """Return the MEMORY assessment."""
+        if hasattr(self, '_parsed_memory') and self._parsed_memory:
+            return self._parsed_memory
+        mem_mb = self.output.memory_mb
+        if mem_mb < 100:
+            tier, note = "Small", "Fits easily in memory"
+        elif mem_mb < 1024:
+            tier, note = "Medium", "Fine for most operations"
+        elif mem_mb < 10240:
+            tier, note = "Large", "May need chunking for CV/grid search"
+        else:
+            tier, note = "Very Large", "Consider sampling or distributed processing"
+        return {
+            'size_mb': round(mem_mb, 1),
+            'tier': tier,
+            'note': note,
+        }
+
+    @property
+    def checks(self) -> dict:
+        """Return the 5Q CHECKS section."""
+        if hasattr(self, '_parsed_checks') and self._parsed_checks:
+            return self._parsed_checks
+        for section in self.sections:
+            if section['type'] == '5q':
+                return section['data']
+        return {}
+
+    @property
+    def timeline(self) -> dict:
+        """Return the TIMELINE HEALTH section."""
+        if hasattr(self, '_parsed_timeline') and self._parsed_timeline:
+            return self._parsed_timeline
+        for section in self.sections:
+            if section['type'] == 'timeline':
+                return section['data']
+        return {}
+
+    @property
+    def blocking_issues(self) -> list:
+        """Return list of blocking issues from 5Q checks."""
+        if hasattr(self, '_parsed_blocking') and self._parsed_blocking is not None:
+            return self._parsed_blocking
+        return self._get_blocking_issues()
+
+    @property
+    def decisions(self) -> str:
+        """Return the DECISIONS section."""
+        if hasattr(self, '_parsed_decisions') and self._parsed_decisions:
+            return self._parsed_decisions
+        if self.decisions_df is not None and not self.decisions_df.empty:
+            return self._render_decisions_df(self.decisions_df)
+        if hasattr(self, '_decisions_md') and self._decisions_md:
+            return self._decisions_md
+        return ""
+
+    @property
+    def changes(self) -> dict:
+        """Return the CHANGES section."""
+        if hasattr(self, '_parsed_changes') and self._parsed_changes:
+            return self._parsed_changes
+        row_delta = self.output.rows - self.input.rows
+        row_pct = (row_delta / self.input.rows * 100) if self.input.rows > 0 else 0
+        result = {
+            'rows': {'before': self.input.rows, 'after': self.output.rows, 'pct': round(row_pct, 0)},
+        }
+        if self.input.target_nas > 0 or self.output.target_nas > 0:
+            result['nas'] = {'before': self.input.target_nas, 'after': self.output.target_nas}
+        if self.input.frequency != self.output.frequency:
+            result['frequency'] = {'before': self.input.frequency, 'after': self.output.frequency}
+        if self.input.memory_mb > 0:
+            mem_pct = ((self.input.memory_mb - self.output.memory_mb) / self.input.memory_mb * 100)
+            result['memory'] = {
+                'before_mb': round(self.input.memory_mb, 1),
+                'after_mb': round(self.output.memory_mb, 1),
+                'pct': round(mem_pct, 0)
+            }
+        return result
+
+    @property
+    def full_report(self) -> str:
+        """Return the full report as text."""
+        if hasattr(self, '_raw_content') and self._raw_content:
+            return self._raw_content
+        return self.to_text()
 
     def save(self, path: str, format: str = 'auto'):
         """
