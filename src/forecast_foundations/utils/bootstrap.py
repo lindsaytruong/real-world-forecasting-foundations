@@ -12,7 +12,7 @@ Defaults
 --------
 - project_dir : auto-detected project root
 - data_dir    : <project_dir>/data
-- output_dir  : <data_dir>/outputs/<notebook_name>/
+- output_dir  : <data_dir>/output/<notebook_name>/
 - cache_dir   : <data_dir>/.cache/<notebook_name>/
 - dataset     : "m5"
 - use_cache   : True
@@ -71,7 +71,7 @@ class NotebookEnvironment:
     CACHE_DIR: Path
     NB_NAME: str
     cache: Any
-    outputs: ArtifactManager
+    output: ArtifactManager
     tsf: Any
     dataset: str
     M5_DIR: Optional[Path] = None
@@ -109,7 +109,7 @@ def setup_notebook(
 
     # --- Resolve directories (defaults inside <project>/data) ---
     data_root = _as_path(data_dir) or (root / "data")
-    output_root = _as_path(output_dir) or (data_root / "outputs")
+    output_root = _as_path(output_dir) or (data_root / "output")
     cache_root = _as_path(cache_dir) or (data_root / ".cache")
 
     data_root = _ensure_dir(data_root)
@@ -158,7 +158,7 @@ def setup_notebook(
         CACHE_DIR=cache_root,
         NB_NAME=nb_name,
         cache=cache,
-        outputs=outputs,
+        output=outputs,
         tsf=tsf,
         dataset=dataset_norm or dataset,
         M5_DIR=m5_dir,

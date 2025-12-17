@@ -1,0 +1,46 @@
+# Decisions Log
+# Tracks key choices made in each module with rationale
+
+"1.06":
+  title: First Contact
+  decisions:
+    - step: Dtype fixing
+      decision: pd.to_datetime, pd.to_numeric
+      why: Raw strings → proper types
+      rev: true
+
+    - step: Weekly aggregation
+      decision: resample('W-SAT').sum()
+      why: Matches Walmart fiscal week (Sun-Sat)
+      rev: true
+
+    - step: Deduplication
+      decision: drop_duplicates(keep='first')
+      why: First occurrence is source of truth
+      rev: null
+
+"1.08":
+  title: Data Preparation
+  decisions:
+    - step: Gap filling
+      decision: fill_gaps() per series
+      why: Complete timeline for lag features
+      rev: true  # is_gap flag preserved
+
+    - step: Imputation
+      decision: Zero fill
+      why: Missing weeks = no sales (retail)
+      rev: true  # Can re-impute using is_gap
+
+    - step: Calendar aggregation
+      decision: Events any(), SNAP max(), IDs first()
+      why: Weekly rollup of daily calendar
+      rev: true  # Raw calendar available
+
+# "1.07":
+#   title: Data Structure
+#   decisions:
+#     - step: ...
+#       decision: ...
+#       why: ...
+#       rev: null

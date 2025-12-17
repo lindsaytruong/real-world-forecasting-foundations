@@ -47,7 +47,6 @@ from .cache.cache import CacheManager, ArtifactManager
 # =============================================================================
 # Reporting & Analysis
 # =============================================================================
-from .analysis.reports import ModuleReport, Snapshot, plot_timeline_health
 from .analysis.profile import (
     acf_summary,
     profile_series,
@@ -62,6 +61,17 @@ from .analysis.profile import (
     calc_outlier_metrics,
     ADI_THRESHOLD,
     CV2_THRESHOLD,
+)
+
+# =============================================================================
+# Reports
+# =============================================================================
+from .reports import (
+    ModuleReport,
+    Snapshot,
+    plot_timeline_health,
+    MODULE_CHECKS,
+    MODULE_TITLES,
 )
 
 # =============================================================================
@@ -110,6 +120,12 @@ __all__ = [
     'calc_outlier_metrics',
     'ADI_THRESHOLD',
     'CV2_THRESHOLD',
+    # Reports
+    'ModuleReport',
+    'Snapshot',
+    'plot_timeline_health',
+    'MODULE_CHECKS',
+    'MODULE_TITLES',
     # Helpers
     'find_project_root',
     'get_notebook_name',

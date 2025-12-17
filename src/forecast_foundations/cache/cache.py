@@ -29,7 +29,7 @@ from ..utils.helpers import (
 )
 
 if TYPE_CHECKING:
-    from ..analysis.reports import ModuleReport
+    from ..reports import ModuleReport
 
 
 MANIFEST_FILENAME = 'cache_manifest.json'
@@ -131,7 +131,6 @@ class CacheManager:
         module: Optional[str] = None,
         source: Optional[str] = None,
         report: Optional['ModuleReport'] = None,
-        report_format: str = 'md',
         inherit_config: bool = True,
         overwrite: Optional[bool] = None
     ) -> Path:
@@ -151,9 +150,7 @@ class CacheManager:
         source : str, optional
             Parent cache key. Auto-detects from last load.
         report : ModuleReport, optional
-            Report to save alongside data
-        report_format : str, default='md'
-            Report output format: 'md' (markdown), 'txt' (plain text), 'pdf', or 'html'
+            Report to save alongside data (saved as txt)
         inherit_config : bool, default=True
             If True, inherit config from source
         overwrite : bool, optional
@@ -212,8 +209,7 @@ class CacheManager:
         # Save report if provided
         report_filename = None
         if report is not None:
-            report_ext = report_format if report_format in ('md', 'txt', 'pdf', 'html') else 'md'
-            report_filename = f"{key}_report.{report_ext}"
+            report_filename = f"{key}_report.txt"
             report_path = self.cache_dir / report_filename
             report.save(report_path)
         
@@ -311,7 +307,7 @@ class CacheManager:
             if entry.get('report_filename'):
                 report_path = self.cache_dir / entry['report_filename']
                 if report_path.exists():
-                    from ..analysis.reports import ModuleReport
+                    from ..reports import ModuleReport
                     report_obj = ModuleReport.load(report_path)
                     if verbose:
                         print(f"   Report: ✓")
@@ -452,7 +448,7 @@ class ArtifactManager:
     Manages curriculum artifacts with separate data/reports directories.
 
     Structure:
-        outputs/
+        output/
         ├── data/
         │   └── 1_06_first_contact_output.parquet
         ├── reports/
@@ -462,11 +458,11 @@ class ArtifactManager:
     Parameters
     ----------
     outputs_dir : Path
-        Root outputs directory (e.g., DATA_DIR / 'outputs')
+        Root output directory (e.g., DATA_DIR / 'output')
 
     Examples
     --------
-    >>> artifacts = ArtifactManager(DATA_DIR / 'outputs')
+    >>> artifacts = ArtifactManager(DATA_DIR / 'output')
     >>> artifacts.save(df, report=report)  # Auto-detects notebook name
     >>> df, report = artifacts.load('1_06_first_contact')
     """
@@ -498,7 +494,6 @@ class ArtifactManager:
         config: Optional[Dict[str, Any]] = None,
         source: Optional[str] = None,
         report: Optional['ModuleReport'] = None,
-        report_format: str = 'md',
     ) -> Path:
         """
         Save DataFrame and optional report to outputs.
@@ -514,9 +509,7 @@ class ArtifactManager:
         source : str, optional
             Source artifact key for lineage. Auto-detects from last load.
         report : ModuleReport, optional
-            Report to save alongside data
-        report_format : str, default='md'
-            Report output format: 'md' (markdown), 'txt' (plain text), 'pdf', or 'html'
+            Report to save alongside data (saved as txt)
 
         Returns
         -------
@@ -539,13 +532,12 @@ class ArtifactManager:
         df.to_parquet(data_path, index=False)
 
         # Save report
-        report_ext = report_format if report_format in ('md', 'txt', 'pdf', 'html') else 'md'
         if report is not None:
-            report_path = self.outputs_dir / 'reports' / f'{key}_report.{report_ext}'
+            report_path = self.outputs_dir / 'reports' / f'{key}_report.txt'
             report.save(report_path)
 
         # Update manifest
-        report_file = f'reports/{key}_report.{report_ext}' if report else None
+        report_file = f'reports/{key}_report.txt' if report else None
         self._manifest[key] = {
             'key': key,
             'data_file': f'data/{data_filename}',
@@ -608,7 +600,7 @@ class ArtifactManager:
             if entry.get('report_file'):
                 report_path = self.outputs_dir / entry['report_file']
                 if report_path.exists():
-                    from ..analysis.reports import ModuleReport
+                    from ..reports import ModuleReport
                     report_obj = ModuleReport.load(report_path)
                     print(f"   Report: ✓")
             return df, report_obj
