@@ -42,7 +42,7 @@ from .version import __version__
 # =============================================================================
 # Cache Management
 # =============================================================================
-from .cache.cache import CacheManager, ArtifactManager
+from .cache.cache import CacheManager, ArtifactManager, cached
 
 # =============================================================================
 # Reporting & Analysis
@@ -69,7 +69,7 @@ from .analysis.profile import (
 from .reports import (
     ModuleReport,
     Snapshot,
-    plot_timeline_health,
+    # plot_timeline_health,
     MODULE_CHECKS,
     MODULE_TITLES,
 )
@@ -83,7 +83,14 @@ from .utils.helpers import (
     get_notebook_path,
     get_module_from_notebook,
     get_artifact_subfolder,
+    plot_ld6_vs_sb,
+    ld6_vs_sb_summary,
 )
+
+# =============================================================================
+# Plotting / Theme
+# =============================================================================
+from .plots import theme
 
 
 __all__ = [
@@ -105,6 +112,7 @@ __all__ = [
     # Cache
     'CacheManager',
     'ArtifactManager',
+    'cached',
     # Report & Analysis
     'first_contact_check',
     'FirstContactReport',
@@ -132,6 +140,10 @@ __all__ = [
     'get_notebook_path',
     'get_module_from_notebook',
     'get_artifact_subfolder',
+    'plot_ld6_vs_sb',
+    'ld6_vs_sb_summary',
+    # Theme
+    'theme',
 ]
 
 # Bootstrap (notebook setup)

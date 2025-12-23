@@ -9,6 +9,8 @@ from .helpers import (
     get_notebook_path,
     get_module_from_notebook,
     get_artifact_subfolder,
+    plot_ld6_vs_sb,
+    ld6_vs_sb_summary,
 )
 
 from .bootstrap import setup_notebook, NotebookEnvironment
@@ -21,4 +23,7 @@ __all__ = [
     "get_artifact_subfolder",
     "setup_notebook",
     "NotebookEnvironment",
+    "plot_ld6_vs_sb",
+    "ld6_vs_sb_summary",
+    "plot_ld6_vs_sb",
 ]

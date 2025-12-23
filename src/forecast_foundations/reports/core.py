@@ -1,15 +1,12 @@
 """
 Core report classes: ModuleReport, Snapshot.
 
-ModuleReport provides a consistent interface across all modules:
-    report.summary      # dict
-    report.target       # list[check] - Q1
-    report.metric       # list[check] - Q2
-    report.structure    # list[check] - Q3
-    report.drivers      # list[check] - Q4
-    report.readiness    # list[check] - final status (optional)
-    report.decisions    # str
-    report.changes      # dict
+ModuleReport provides a consistent interface across all modules.
+For Module 1.10, all statistics are computed internally — no external kwargs needed.
+
+Usage:
+    report = ModuleReport("1.10", input_df=diagnostics, output_df=scores_df)
+    report.display()
 """
 
 import pandas as pd
@@ -20,7 +17,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, List, Dict, Any, Union
 
-from .checks import MODULE_CHECKS, MODULE_TITLES
+from .checks import (
+    MODULE_CHECKS, 
+    MODULE_TITLES, 
+    ld6_summary_table,
+    render_1_10_text,
+)
 from .formatters import (
     format_table,
     format_decisions_df,
@@ -37,10 +39,8 @@ from .formatters import (
 # =============================================================================
 
 def _find_project_root(start_path: Path = None) -> Optional[Path]:
-    """Find project root by looking for config/decisions.yaml or pyproject.toml."""
     if start_path is None:
         start_path = Path.cwd()
-    
     current = start_path.resolve()
     for _ in range(10):
         if (current / "config" / "decisions.yaml").exists():
@@ -54,30 +54,22 @@ def _find_project_root(start_path: Path = None) -> Optional[Path]:
 
 
 def _load_decisions_from_yaml(module: str, root: Path = None) -> Optional[pd.DataFrame]:
-    """Load decisions for a module from config/decisions.yaml."""
     if root is None:
         root = _find_project_root()
-    
     if root is None:
         return None
-    
     decisions_path = root / "config" / "decisions.yaml"
     if not decisions_path.exists():
         return None
-    
     try:
         with open(decisions_path) as f:
             data = yaml.safe_load(f)
-        
         if module not in data:
             return None
-        
         module_data = data[module]
         decisions_list = module_data.get("decisions", [])
-        
         if not decisions_list:
             return None
-        
         return pd.DataFrame(decisions_list)
     except Exception:
         return None
@@ -115,7 +107,7 @@ class Snapshot:
     ) -> 'Snapshot':
         rows = len(df)
         columns = df.shape[1]
-        series = df[id_col].nunique() if id_col in df.columns else 0
+        series = df[id_col].nunique() if id_col in df.columns else rows
         
         date_min = date_max = 'N/A'
         n_weeks = 0
@@ -160,22 +152,17 @@ class ModuleReport:
     """
     Unified report class for all modules.
     
-    Provides consistent properties across all modules:
-        report.summary, report.target, report.metric, report.structure,
-        report.drivers, report.readiness, report.decisions, report.changes
+    For Module 1.10, all statistics are computed internally from output_df.
+    No external kwargs needed.
     
     Parameters
     ----------
     module : str
-        Module ID (e.g., "1.06", "1.08")
+        Module ID (e.g., "1.06", "1.08", "1.10")
     input_df : pd.DataFrame
         Data before transformations
     output_df : pd.DataFrame
-        Data after transformations
-    decisions : str, pd.DataFrame, or None
-        Explicit decisions. If None, auto-loads from config/decisions.yaml.
-    drivers : dict[str, pd.DataFrame], optional
-        Driver datasets (calendar, prices) for validation.
+        Data after transformations (for 1.10: scores DataFrame)
     """
     
     def __init__(
@@ -199,6 +186,10 @@ class ModuleReport:
         self.sample_df = sample_df if sample_df is not None else output_df
         self.generated_at = datetime.now().strftime("%Y-%m-%d %H:%M")
         
+        # Store drivers
+        if drivers is None:
+            drivers = {}
+        
         # Load decisions
         if decisions is not None:
             if isinstance(decisions, pd.DataFrame):
@@ -211,282 +202,400 @@ class ModuleReport:
             self.decisions_df = _load_decisions_from_yaml(module)
             self._decisions_md = None
         
-        # Params for check functions
-        if hierarchy_cols is None:
-            hierarchy_cols = ['state_id', 'store_id', 'cat_id', 'dept_id']
+        # Get module-specific check functions
+        checks_funcs = MODULE_CHECKS.get(module, {})
         
-        params = {
-            'date_col': date_col,
-            'target_col': target_col,
-            'id_col': id_col,
-            'hierarchy_cols': hierarchy_cols,
-            'drivers': drivers or {},
-            'input_df': input_df,
+        # Common kwargs for checks
+        check_kwargs = {
+            "date_col": date_col,
+            "target_col": target_col,
+            "id_col": id_col,
+            "hierarchy_cols": hierarchy_cols or ["state_id", "store_id", "cat_id", "dept_id"],
+            "calendar_df": drivers.get("calendar") if drivers else None,
             **kwargs
         }
         
-        # Run module-specific checks
-        module_checks = MODULE_CHECKS.get(module, {})
-        self._target = module_checks.get('target', lambda *a, **k: [])(output_df, **params)
-        self._metric = module_checks.get('metric', lambda *a, **k: [])(output_df, **params)
-        self._structure = module_checks.get('structure', lambda *a, **k: [])(output_df, **params)
-        self._drivers = module_checks.get('drivers', lambda *a, **k: [])(output_df, **params)
-        self._readiness = module_checks.get('readiness', lambda *a, **k: [])(output_df, **params)
+        # Run standard 5Q checks
+        self._target = checks_funcs.get("target", lambda df, **kw: [])(output_df, **check_kwargs)
+        self._metric = checks_funcs.get("metric", lambda df, **kw: [])(output_df, **check_kwargs)
+        self._structure = checks_funcs.get("structure", lambda df, **kw: [])(output_df, **check_kwargs)
+        self._drivers = checks_funcs.get("drivers", lambda df, **kw: [])(output_df, **check_kwargs)
+        self._readiness = checks_funcs.get("readiness", lambda df, **kw: [])(output_df, **check_kwargs)
+        
+        # Run diagnostic profile (1.09+)
+        self._diagnostic_profile = checks_funcs.get("diagnostic_profile", lambda df, **kw: [])(output_df, **check_kwargs)
+
+        # Run flags (all modules)
+        self._flags = checks_funcs.get("flags", lambda df, **kw: [])(output_df, **check_kwargs)
+
+        # =====================================================================
+        # 1.10-specific: Compute all statistics internally
+        # =====================================================================
+        if module == "1.10":
+            self._compute_1_10_stats(output_df, check_kwargs)
+        else:
+            # Initialize empty for non-1.10 modules
+            self._ld6_summary_data = {}
+            self._score_stats = {}
+            self._score_validation = []
+            self._quadrant_dist = {}
+            self._quadrant_counts = {}
+            self._dominant_quadrant = ""
+            self._character = ""
+            self._interpretations = []
+            self._decisions_logged = []
     
+    def _compute_1_10_stats(self, df: pd.DataFrame, check_kwargs: dict):
+        """
+        Compute all 1.10-specific statistics from the scores DataFrame.
+        Called automatically during __init__ for module 1.10.
+        """
+        # LD6 summary table
+        self._ld6_summary_data = ld6_summary_table(df)
+        
+        # Score statistics
+        structure = df['structure_score'] if 'structure_score' in df.columns else pd.Series()
+        chaos = df['chaos_score'] if 'chaos_score' in df.columns else pd.Series()
+        
+        if len(structure) > 0 and len(chaos) > 0:
+            self._score_stats = {
+                'structure': {
+                    'median': float(structure.median()),
+                    'mean': float(structure.mean()),
+                    'std': float(structure.std()),
+                    'skew': float(structure.skew()),
+                    'min': float(structure.min()),
+                    'max': float(structure.max()),
+                },
+                'chaos': {
+                    'median': float(chaos.median()),
+                    'mean': float(chaos.mean()),
+                    'std': float(chaos.std()),
+                    'skew': float(chaos.skew()),
+                    'min': float(chaos.min()),
+                    'max': float(chaos.max()),
+                },
+                'correlation': float(structure.corr(chaos)),
+            }
+        else:
+            self._score_stats = {}
+        
+        # Score validation checks
+        checks_funcs = MODULE_CHECKS.get("1.10", {})
+        self._score_validation = checks_funcs.get("score_validation", lambda df, **kw: [])(df, **check_kwargs)
+        
+        # Quadrant distribution
+        if 'sb_quadrant' in df.columns:
+            self._quadrant_dist = df['sb_quadrant'].value_counts(normalize=True).to_dict()
+            self._quadrant_counts = df['sb_quadrant'].value_counts().to_dict()
+            self._dominant_quadrant = df['sb_quadrant'].value_counts().idxmax()
+        else:
+            self._quadrant_dist = {}
+            self._quadrant_counts = {}
+            self._dominant_quadrant = ""
+        
+        # Portfolio character
+        structure_med = self._score_stats.get('structure', {}).get('median', 0.5)
+        chaos_med = self._score_stats.get('chaos', {}).get('median', 0.5)
+        
+        if structure_med < 0.35 and chaos_med > 0.40:
+            self._character = "CHAOS-DOMINANT"
+            self._interpretations = [
+                "Weak signal (low structure) combined with high instability (high chaos)",
+                f"Consistent with {self._dominant_quadrant} being dominant ({self._quadrant_dist.get(self._dominant_quadrant, 0):.1%})",
+                "Complex models will likely overfit — prioritize robust baselines"
+            ]
+        elif structure_med > 0.45 and chaos_med < 0.35:
+            self._character = "STRUCTURE-DOMINANT"
+            self._interpretations = [
+                "Strong learnable patterns with manageable noise",
+                "Good candidate for ML models (ETS, LightGBM)",
+                "Invest in feature engineering and model complexity"
+            ]
+        else:
+            self._character = "MIXED"
+            self._interpretations = [
+                "Neither structure nor chaos clearly dominates",
+                "Different series need different approaches",
+                "Segment by quadrant and use lane-specific strategies"
+            ]
+
+        # Initialize decisions logged (empty by default)
+        self._decisions_logged = []
+
     # -------------------------------------------------------------------------
-    # Properties - Consistent API
+    # Properties
     # -------------------------------------------------------------------------
     
     @property
-    def summary(self) -> dict:
-        """DATA SUMMARY as dict."""
-        return {
-            'Rows': f"{self.output.rows:,}",
-            'Series': f"{self.output.series:,}",
-            'Dates': f"{self.output.date_min} → {self.output.date_max}",
-            'Frequency': self.output.frequency,
-            'History': f"{self.output.n_weeks} weeks ({self.output.n_weeks/52:.1f} yrs)",
-            'Target zeros': f"{self.output.target_zeros_pct:.1f}%",
+    def summary(self) -> Dict[str, str]:
+        """Key metrics for quick reference."""
+        o = self.output
+        summary = {
+            "Rows": f"{o.rows:,}",
+            "Series": f"{o.series:,}",
         }
+        if o.date_min != 'N/A':
+            summary["Dates"] = f"{o.date_min} → {o.date_max}"
+            summary["Frequency"] = o.frequency
+            summary["History"] = f"{o.n_weeks} weeks ({o.n_weeks/52:.1f} yrs)"
+        if o.target_zeros_pct > 0:
+            summary["Target zeros"] = f"{o.target_zeros_pct:.1f}%"
+        return summary
     
     @property
     def target(self) -> List[Dict]:
-        """Q1: TARGET checks."""
         return self._target
     
     @property
     def metric(self) -> List[Dict]:
-        """Q2: METRIC checks."""
         return self._metric
     
     @property
     def structure(self) -> List[Dict]:
-        """Q3: STRUCTURE checks."""
         return self._structure
     
     @property
     def drivers(self) -> List[Dict]:
-        """Q4: DRIVERS checks."""
         return self._drivers
     
     @property
     def readiness(self) -> List[Dict]:
-        """READINESS checks (prep modules only)."""
         return self._readiness
     
     @property
-    def decisions(self) -> str:
-        """DECISIONS as formatted string."""
-        if self.decisions_df is not None and not self.decisions_df.empty:
-            return format_decisions_df(self.decisions_df)
-        if self._decisions_md:
-            return self._decisions_md
-        return ""
+    def diagnostic_profile(self) -> List[Dict]:
+        return self._diagnostic_profile
     
     @property
-    def changes(self) -> dict:
-        """CHANGES vs input."""
-        row_delta = self.output.rows - self.input.rows
-        row_pct = (row_delta / self.input.rows * 100) if self.input.rows > 0 else 0
-        result = {
-            'rows': {'before': self.input.rows, 'after': self.output.rows, 'pct': round(row_pct, 0)},
-        }
-        if self.input.target_nas > 0 or self.output.target_nas > 0:
-            result['nas'] = {'before': self.input.target_nas, 'after': self.output.target_nas}
-        if self.input.frequency != self.output.frequency:
-            result['frequency'] = {'before': self.input.frequency, 'after': self.output.frequency}
-        if self.input.memory_mb > 0:
-            mem_pct = ((self.input.memory_mb - self.output.memory_mb) / self.input.memory_mb * 100)
-            result['memory'] = {
-                'before_mb': round(self.input.memory_mb, 1),
-                'after_mb': round(self.output.memory_mb, 1),
-                'pct': round(mem_pct, 0)
-            }
-        return result
+    def flags(self) -> List[Dict]:
+        return self._flags
     
     @property
     def blocking_issues(self) -> List[str]:
-        """List of blocking issues (status == '✗')."""
-        issues = []
-        for checks in [self._target, self._metric, self._structure, self._drivers]:
-            for c in checks:
-                if c.get('status') == '✗':
-                    issues.append(f"{c['check']}: {c['value']}")
-        return issues
+        """Extract all blocking (✗) issues."""
+        all_checks = self._target + self._metric + self._structure + self._drivers + self._readiness + self._flags
+        return [f"{c['check']}: {c['value']}" for c in all_checks if c.get('status') == '✗']
     
     @property
-    def memory(self) -> dict:
-        """Memory assessment."""
-        tier, note, status = get_memory_tier(self.output.memory_mb)
-        return {
-            'size_mb': round(self.output.memory_mb, 1),
-            'tier': tier,
-            'note': note,
-            'status': status,
+    def changes(self) -> Dict[str, Any]:
+        """Compute before/after deltas."""
+        i, o = self.input, self.output
+        changes = {
+            "rows": {"before": i.rows, "after": o.rows, "pct": ((o.rows - i.rows) / i.rows * 100) if i.rows else 0},
+            "columns": {"before": i.columns, "after": o.columns},
+            "memory": {"before_mb": i.memory_mb, "after_mb": o.memory_mb, "pct": ((o.memory_mb - i.memory_mb) / i.memory_mb * 100) if i.memory_mb else 0},
         }
+        if i.target_nas != o.target_nas:
+            changes["nas"] = {"before": i.target_nas, "after": o.target_nas}
+        if i.frequency != o.frequency:
+            changes["frequency"] = {"before": i.frequency, "after": o.frequency}
+        return changes
     
     # -------------------------------------------------------------------------
-    # Output Methods
+    # 1.10-specific properties
+    # -------------------------------------------------------------------------
+    
+    @property
+    def ld6_summary(self) -> Dict[str, Dict]:
+        """LD6 metric statistics (1.10 only)."""
+        return self._ld6_summary_data
+    
+    @property
+    def score_stats(self) -> Dict[str, Any]:
+        """Structure/Chaos score statistics (1.10 only)."""
+        return self._score_stats
+    
+    @property
+    def quadrant_distribution(self) -> Dict[str, float]:
+        """S-B quadrant percentages (1.10 only)."""
+        return self._quadrant_dist
+    
+    @property
+    def character(self) -> str:
+        """Portfolio character: CHAOS-DOMINANT, STRUCTURE-DOMINANT, or MIXED (1.10 only)."""
+        return self._character
+    
+    # -------------------------------------------------------------------------
+    # Rendering
     # -------------------------------------------------------------------------
     
     def to_text(self) -> str:
-        """Generate text report."""
-        w = 65
+        """Render full text report."""
+        W = 65
+
+        # Use specialized renderer for 1.10
+        if self.module == "1.10":
+            return render_1_10_text(
+                self, W,
+                section_header=section_header,
+                get_memory_tier=get_memory_tier,
+                render_checks_text=render_checks_text,
+            )
+
+        # Standard rendering for other modules
         lines = []
-        
+
         # Header
-        title = f"{self.module} · {self.module_title}" if self.module_title else self.module
-        lines.append("━" * w)
-        lines.append(title)
-        lines.append("━" * w)
+        lines.append("━" * W)
+        lines.append(f"{self.module} · {self.module_title}")
+        lines.append("━" * W)
         
         # Snapshot
-        lines.append(section_header("SNAPSHOT"))
-        lines.append(self.sample_df.head(3).to_string(index=False))
+        lines.append(section_header("SNAPSHOT", W))
+        sample_cols = self._get_snapshot_cols()
+        if not self.sample_df.empty and sample_cols:
+            display_cols = [c for c in sample_cols if c in self.sample_df.columns]
+            if display_cols:
+                sample = self.sample_df[display_cols].head(3)
+                lines.append(sample.to_string(index=False))
         
         # Data Summary
-        lines.append(section_header("DATA SUMMARY"))
-        for k, v in self.summary.items():
-            lines.append(f"  {k:<15} {v}")
+        lines.append(section_header("DATA SUMMARY", W))
+        if self.module == "1.09":
+            lines.append(f"  Series diagnosed  {self.output.series:,}")
+            lines.append(f"  Metrics computed  {self.output.columns}")
+            lines.append(f"  Source            1.08 Data Preparation")
+        else:
+            for k, v in self.summary.items():
+                lines.append(f"  {k:<16} {v}")
         
         # Memory
-        lines.append(section_header("MEMORY"))
-        mem = self.memory
-        lines.append(f"  {mem['status']} {mem['size_mb']:.0f} MB ({mem['tier']}) — {mem['note']}")
+        lines.append(section_header("MEMORY", W))
+        tier, note, status = get_memory_tier(self.output.memory_mb)
+        lines.append(f"  {status} {self.output.memory_mb:.0f} MB ({tier}) — {note}")
         
-        # 5Q Sections
-        q_sections = [
-            ('Q1 · Target', self._target),
-            ('Q2 · Metric', self._metric),
-            ('Q3 · Structure', self._structure),
-            ('Q4 · Drivers', self._drivers),
-        ]
+        # 5Q Checks (1.06, 1.08) or Diagnostic Profile (1.09)
+        if self.module in ["1.06", "1.08"]:
+            lines.append(section_header("5Q CHECKS", W))
+            
+            if self._target:
+                lines.append("\n  Q1 · Target")
+                lines.extend(render_checks_text(self._target, "    "))
+            
+            if self._metric:
+                lines.append("\n  Q2 · Metric")
+                lines.extend(render_checks_text(self._metric, "    "))
+            
+            if self._structure:
+                lines.append("\n  Q3 · Structure")
+                lines.extend(render_checks_text(self._structure, "    "))
+            
+            if self._drivers:
+                lines.append("\n  Q4 · Drivers")
+                lines.extend(render_checks_text(self._drivers, "    "))
+            
+            if self._readiness:
+                lines.append(section_header("READINESS", W))
+                lines.extend(render_checks_text(self._readiness, "  "))
         
-        has_checks = any(checks for _, checks in q_sections)
-        if has_checks:
-            lines.append(section_header("5Q CHECKS"))
-            for name, checks in q_sections:
-                if checks:
-                    lines.append(f"\n  {name}")
-                    lines.extend(render_checks_text(checks, indent="    "))
+        elif self.module == "1.09":
+            lines.append(section_header("DIAGNOSTIC PROFILE", W))
+            lines.append("                        Low      Medium     High")
+            lines.append("  STRUCTURE (▲ high = more signal)")
+            for c in self._diagnostic_profile:
+                if c['key'].startswith('diag.') and c['key'].split('.')[1] in ['trend', 'seasonal_strength']:
+                    lines.append(f"    {c['check']:<20} {c['value']}")
+            lines.append("  CHAOS (▼ high = less forecastable)")
+            for c in self._diagnostic_profile:
+                if c['key'].startswith('diag.') and c['key'].split('.')[1] in ['entropy', 'adi', 'cv2']:
+                    lines.append(f"    {c['check']:<20} {c['value']}")
+            
+            # List all diagnostic columns
+            lines.append(section_header("METRICS COMPUTED", W))
+            exclude_cols = {'unique_id', 'item_id', 'dept_id', 'cat_id', 'store_id', 'state_id'}
+            metric_cols = [c for c in self.sample_df.columns if c not in exclude_cols]
+            # Display in rows of 4
+            for i in range(0, len(metric_cols), 4):
+                row_cols = metric_cols[i:i+4]
+                lines.append("  " + "  ".join(f"{c:<16}" for c in row_cols))
         
-        # Readiness (if present)
-        if self._readiness:
-            lines.append(section_header("READINESS"))
-            lines.extend(render_checks_text(self._readiness))
+        # Flags (all modules)
+        lines.append(section_header("FLAGS", W))
+        if self._flags:
+            lines.extend(render_checks_text(self._flags, "  "))
+        elif self.blocking_issues:
+            for b in self.blocking_issues:
+                lines.append(f"  ✗ {b}")
+        else:
+            lines.append("  None ✓")
         
-        # Blocking Issues
-        if has_checks:
-            lines.append(section_header("BLOCKING ISSUES"))
-            if self.blocking_issues:
-                for b in self.blocking_issues:
-                    lines.append(f"  ✗ {b}")
-            else:
-                lines.append("  None ✓")
-        
-        # Decisions
-        if self.decisions:
-            lines.append(section_header("DECISIONS"))
-            lines.append(self.decisions)
-        
-        # Changes
-        lines.append(section_header("CHANGES"))
-        c = self.changes
-        row_pct = c['rows']['pct']
-        sign = '+' if row_pct >= 0 else ''
-        lines.append(f"  {'Rows':<15} {c['rows']['before']:,} → {c['rows']['after']:,}  ({sign}{row_pct:.0f}%)")
-        if 'nas' in c:
-            fixed = "✓ Fixed" if c['nas']['after'] == 0 and c['nas']['before'] > 0 else ""
-            lines.append(f"  {'NAs (y)':<15} {c['nas']['before']:,} → {c['nas']['after']:,}  {fixed}")
-        if 'frequency' in c:
-            lines.append(f"  {'Frequency':<15} {c['frequency']['before']} → {c['frequency']['after']}")
-        if 'memory' in c:
-            mem_sign = '+' if c['memory']['pct'] < 0 else '-'
-            lines.append(f"  {'Memory':<15} {c['memory']['before_mb']:.1f} MB → {c['memory']['after_mb']:.1f} MB  ({mem_sign}{abs(c['memory']['pct']):.0f}%)")
+        # Changes (skip for 1.09 — transformation is obvious)
+        if self.module != "1.09":
+            lines.append(section_header("CHANGES", W))
+            c = self.changes
+            lines.append(f"  Rows              {c['rows']['before']:,} → {c['rows']['after']:,}  ({c['rows']['pct']:+.0f}%)")
+            if 'nas' in c:
+                fixed = " ✓ Fixed" if c['nas']['after'] == 0 else ""
+                lines.append(f"  NAs (y)           {c['nas']['before']:,} → {c['nas']['after']:,}{fixed}")
+            if 'frequency' in c:
+                lines.append(f"  Frequency         {c['frequency']['before']} → {c['frequency']['after']}")
+            lines.append(f"  Memory            {c['memory']['before_mb']:.1f} MB → {c['memory']['after_mb']:.1f} MB  ({c['memory']['pct']:+.0f}%)")
         
         # Footer
-        lines.append("\n" + "━" * w)
+        lines.append("\n" + "━" * W)
         lines.append(f"Generated: {self.generated_at}")
-        lines.append("━" * w)
+        lines.append("━" * W)
         
-        return '\n'.join(lines)
+        return "\n".join(lines)
     
-    def to_markdown(self) -> str:
-        """Generate markdown report."""
-        lines = []
-        
-        # Header
-        title = f"{self.module} · {self.module_title}" if self.module_title else self.module
-        lines.append(f"# {title}\n")
-        
-        # Summary
-        lines.append("## Data Summary\n")
-        for k, v in self.summary.items():
-            lines.append(f"- **{k}:** {v}")
-        
-        # Memory
-        mem = self.memory
-        lines.append(f"\n**Memory:** {mem['status']} {mem['size_mb']:.0f} MB ({mem['tier']}) — {mem['note']}\n")
-        
-        # 5Q Sections
-        q_sections = [
-            ('Q1: Target', self._target),
-            ('Q2: Metric', self._metric),
-            ('Q3: Structure', self._structure),
-            ('Q4: Drivers', self._drivers),
-        ]
-        
-        for name, checks in q_sections:
-            if checks:
-                lines.append(f"\n## {name}\n")
-                lines.extend(render_checks_markdown(checks))
-        
-        # Readiness
-        if self._readiness:
-            lines.append("\n## Readiness\n")
-            lines.extend(render_checks_markdown(self._readiness))
-        
-        # Blocking Issues
-        lines.append("\n## Blocking Issues\n")
-        if self.blocking_issues:
-            for b in self.blocking_issues:
-                lines.append(f"- ❌ {b}")
+    def _get_snapshot_cols(self) -> List[str]:
+        """Get columns to show in snapshot based on module."""
+        if self.module == "1.10":
+            return ["unique_id", "trend", "seasonal_strength", "entropy",
+                    "adi", "cv2", "structure_score", "chaos_score", "sb_quadrant"]
+        elif self.module == "1.09":
+            return ["unique_id", "trend", "seasonal_strength", "entropy", "adi", "cv2"]
         else:
-            lines.append("None ✓")
-        
-        # Decisions
-        if self.decisions_df is not None and not self.decisions_df.empty:
-            lines.append("\n## Decisions\n")
-            lines.append(decisions_df_to_markdown(self.decisions_df))
-        elif self._decisions_md:
-            lines.append("\n## Decisions\n")
-            lines.append(self._decisions_md)
-        
-        # Changes
-        lines.append("\n## Changes\n")
-        lines.append("| Metric | Before | After | Δ |")
-        lines.append("|--------|--------|-------|---|")
-        c = self.changes
-        lines.append(f"| Rows | {c['rows']['before']:,} | {c['rows']['after']:,} | {c['rows']['pct']:+.0f}% |")
-        if 'nas' in c:
-            fixed = " ✓" if c['nas']['after'] == 0 else ""
-            lines.append(f"| NAs (y) | {c['nas']['before']:,} | {c['nas']['after']:,} | Fixed{fixed} |")
-        if 'frequency' in c:
-            lines.append(f"| Frequency | {c['frequency']['before']} | {c['frequency']['after']} | — |")
-        if 'memory' in c:
-            lines.append(f"| Memory | {c['memory']['before_mb']:.0f} MB | {c['memory']['after_mb']:.0f} MB | {c['memory']['pct']:+.0f}% |")
-        
-        lines.append(f"\n---\n*Generated: {self.generated_at}*")
-        
-        return '\n'.join(lines)
+            return ["unique_id", "ds", "y"]
     
     def display(self):
         """Print text report."""
         print(self.to_text())
     
+    def to_markdown(self) -> str:
+        """Render report as markdown."""
+        lines = []
+        
+        lines.append(f"# {self.module} · {self.module_title}")
+        lines.append(f"\n*Generated: {self.generated_at}*\n")
+        
+        # Summary
+        lines.append("## Summary\n")
+        for k, v in self.summary.items():
+            lines.append(f"- **{k}:** {v}")
+        
+        # 5Q Checks or Diagnostic Profile
+        if self.module in ["1.06", "1.08"]:
+            lines.append("\n## 5Q Checks\n")
+            if self._target:
+                lines.append("### Q1 · Target\n")
+                lines.extend(render_checks_markdown(self._target))
+            if self._metric:
+                lines.append("\n### Q2 · Metric\n")
+                lines.extend(render_checks_markdown(self._metric))
+            if self._structure:
+                lines.append("\n### Q3 · Structure\n")
+                lines.extend(render_checks_markdown(self._structure))
+            if self._drivers:
+                lines.append("\n### Q4 · Drivers\n")
+                lines.extend(render_checks_markdown(self._drivers))
+        elif self.module == "1.09":
+            lines.append("\n## Diagnostic Profile\n")
+            lines.extend(render_checks_markdown(self._diagnostic_profile))
+        
+        # Flags
+        lines.append("\n## Flags\n")
+        if self._flags:
+            lines.extend(render_checks_markdown(self._flags))
+        else:
+            lines.append("None ✓")
+        
+        return '\n'.join(lines)
+    
     def to_dict(self) -> dict:
-        """Serialize report to dictionary for storage."""
-        return {
+        """Serialize report to dictionary."""
+        result = {
             'module': self.module,
             'module_title': self.module_title,
             'generated_at': self.generated_at,
@@ -497,10 +606,55 @@ class ModuleReport:
             'structure': self._structure,
             'drivers': self._drivers,
             'readiness': self._readiness,
+            'diagnostic_profile': self._diagnostic_profile,
+            'flags': self._flags,
             'decisions_md': self._decisions_md,
             'decisions_df': self.decisions_df.to_dict('records') if self.decisions_df is not None else None,
         }
-
+        # 1.10-specific
+        if self.module == "1.10":
+            result['ld6_summary'] = self._ld6_summary_data
+            result['score_stats'] = self._score_stats
+            result['score_validation'] = self._score_validation
+            result['quadrant_dist'] = self._quadrant_dist
+            result['quadrant_counts'] = self._quadrant_counts
+            result['dominant_quadrant'] = self._dominant_quadrant
+            result['character'] = self._character
+            result['interpretations'] = self._interpretations
+        return result
+    
+    def to_handoff(self) -> dict:
+        """
+        Generate handoff dictionary for downstream modules (1.10 only).
+        
+        Returns a dict suitable for saving as JSON for Module 1.12.
+        """
+        if self.module != "1.10":
+            return {}
+        
+        return {
+            'module': '1.10',
+            'series_count': self.output.series,
+            'score_stats': self._score_stats,
+            'quadrant_distribution': self._quadrant_dist,
+            'dominant_quadrant': self._dominant_quadrant,
+            'character': self._character,
+            'interpretations': self._interpretations,
+            'thresholds': {
+                'adi_intermittent': 1.32,
+                'cv2_erratic': 0.49,
+                'entropy_high': 0.8,
+                'seasonality_strong': 0.6,
+            },
+            'flags': {
+                'high_entropy_pct': float((self.sample_df['entropy'] > 0.8).mean()) if 'entropy' in self.sample_df.columns else None,
+                'intermittent_pct': float((self.sample_df['adi'] > 1.32).mean()) if 'adi' in self.sample_df.columns else None,
+                'high_cv2_pct': float((self.sample_df['cv2'] > 0.49).mean()) if 'cv2' in self.sample_df.columns else None,
+                'low_structure_pct': float((self.sample_df['structure_score'] < 0.3).mean()) if 'structure_score' in self.sample_df.columns else None,
+                'high_chaos_pct': float((self.sample_df['chaos_score'] > 0.6).mean()) if 'chaos_score' in self.sample_df.columns else None,
+            }
+        }
+    
     @classmethod
     def from_dict(cls, data: dict) -> 'ModuleReport':
         """Reconstruct report from dictionary."""
@@ -515,112 +669,22 @@ class ModuleReport:
         report._structure = data.get('structure', [])
         report._drivers = data.get('drivers', [])
         report._readiness = data.get('readiness', [])
+        report._diagnostic_profile = data.get('diagnostic_profile', [])
+        report._flags = data.get('flags', [])
         report._decisions_md = data.get('decisions_md')
         report.decisions_df = pd.DataFrame(data['decisions_df']) if data.get('decisions_df') else None
-        report.sample_df = pd.DataFrame()  # Not stored, empty placeholder
-        return report
-
-    @classmethod
-    def load(cls, path: str) -> 'ModuleReport':
-        """Load report from txt file by parsing the text format."""
-        import re
-        path = Path(path)
-
-        with open(path, 'r') as f:
-            content = f.read()
-
-        # Parse module from header
-        module_match = re.search(r'^([\d.]+)\s*·\s*(.*)$', content, re.MULTILINE)
-        module = module_match.group(1) if module_match else ''
-        module_title = module_match.group(2).strip() if module_match else ''
-
-        # Parse DATA SUMMARY section
-        summary_section = re.search(r'DATA SUMMARY\n─+\n(.*?)(?=\n[A-Z]|\n━)', content, re.DOTALL)
-        summary_data = {}
-        if summary_section:
-            for line in summary_section.group(1).strip().split('\n'):
-                match = re.match(r'\s*(\S+(?:\s+\S+)?)\s{2,}(.+)$', line.strip())
-                if match:
-                    key, value = match.groups()
-                    summary_data[key.strip()] = value.strip()
-
-        # Parse output snapshot data from summary
-        rows = int(summary_data.get('Rows', '0').replace(',', ''))
-        series = int(summary_data.get('Series', '0').replace(',', ''))
-        dates = summary_data.get('Dates', 'N/A → N/A')
-        date_parts = dates.split(' → ')
-        date_min = date_parts[0] if len(date_parts) > 0 else 'N/A'
-        date_max = date_parts[1] if len(date_parts) > 1 else 'N/A'
-        frequency = summary_data.get('Frequency', 'N/A')
-        history = summary_data.get('History', '0 weeks')
-        n_weeks_match = re.search(r'(\d+)\s*weeks', history)
-        n_weeks = int(n_weeks_match.group(1)) if n_weeks_match else 0
-        zeros_str = summary_data.get('Target zeros', '0%')
-        target_zeros_pct = float(zeros_str.replace('%', ''))
-
-        # Parse MEMORY section
-        memory_match = re.search(r'MEMORY\n─+\n\s*[✓⚠✗ℹ]\s*(\d+)\s*MB', content)
-        memory_mb = float(memory_match.group(1)) if memory_match else 0.0
-
-        # Parse 5Q CHECKS
-        def parse_checks(section_name: str) -> List[Dict]:
-            pattern = rf'{section_name}\n(.*?)(?=\n\s*Q\d|BLOCKING|READINESS|DECISIONS|CHANGES|\n━)'
-            match = re.search(pattern, content, re.DOTALL)
-            if not match:
-                return []
-            checks = []
-            for line in match.group(1).strip().split('\n'):
-                check_match = re.match(r'\s*([✓⚠✗ℹ])\s+(\S.*?)\s{2,}(.+)$', line.strip())
-                if check_match:
-                    status, check, value = check_match.groups()
-                    checks.append({'status': status, 'check': check.strip(), 'value': value.strip()})
-            return checks
-
-        target_checks = parse_checks('Q1 · Target')
-        metric_checks = parse_checks('Q2 · Metric')
-        structure_checks = parse_checks('Q3 · Structure')
-        drivers_checks = parse_checks('Q4 · Drivers')
-        readiness_checks = parse_checks('READINESS')
-
-        # Parse CHANGES to get input data
-        changes_section = re.search(r'CHANGES\n─+\n(.*?)(?=\n━)', content, re.DOTALL)
-        input_rows = rows
-        if changes_section:
-            rows_match = re.search(r'Rows\s+([\d,]+)\s*→', changes_section.group(1))
-            if rows_match:
-                input_rows = int(rows_match.group(1).replace(',', ''))
-
-        # Parse generated_at
-        gen_match = re.search(r'Generated:\s*(.+)$', content, re.MULTILINE)
-        generated_at = gen_match.group(1).strip() if gen_match else ''
-
-        # Build report object
-        report = object.__new__(cls)
-        report.module = module
-        report.module_title = module_title
-        report.generated_at = generated_at
-        report.input = Snapshot(
-            name='Input', rows=input_rows, columns=0, series=series,
-            date_min=date_min, date_max=date_max, n_weeks=n_weeks,
-            frequency=frequency, target_zeros_pct=target_zeros_pct,
-            target_nas=0, duplicates=0, memory_mb=0.0
-        )
-        report.output = Snapshot(
-            name='Output', rows=rows, columns=0, series=series,
-            date_min=date_min, date_max=date_max, n_weeks=n_weeks,
-            frequency=frequency, target_zeros_pct=target_zeros_pct,
-            target_nas=0, duplicates=0, memory_mb=memory_mb
-        )
-        report._target = target_checks
-        report._metric = metric_checks
-        report._structure = structure_checks
-        report._drivers = drivers_checks
-        report._readiness = readiness_checks
-        report._decisions_md = None
-        report.decisions_df = None
         report.sample_df = pd.DataFrame()
+        # 1.10-specific
+        report._ld6_summary_data = data.get('ld6_summary', {})
+        report._score_stats = data.get('score_stats', {})
+        report._score_validation = data.get('score_validation', [])
+        report._quadrant_dist = data.get('quadrant_dist', {})
+        report._quadrant_counts = data.get('quadrant_counts', {})
+        report._dominant_quadrant = data.get('dominant_quadrant', '')
+        report._character = data.get('character', '')
+        report._interpretations = data.get('interpretations', [])
         return report
-
+    
     def save(self, path: str):
         """Save report to txt file."""
         path = Path(path)
@@ -632,32 +696,4 @@ class ModuleReport:
         return f"ModuleReport({self.module}, {self.output.rows:,} rows, {self.output.series:,} series)"
 
 
-# =============================================================================
-# PLOT FUNCTION
-# =============================================================================
-
-def plot_timeline_health(
-    df: pd.DataFrame,
-    date_col: str = 'ds',
-    id_col: str = 'unique_id',
-    figsize: tuple = (12, 3),
-    title: str = 'Timeline Health: Series Reporting per Date'
-):
-    """Single plot: series count per date. Flat = good."""
-    import matplotlib.pyplot as plt
-    
-    series_per_date = df.groupby(date_col)[id_col].nunique()
-    
-    fig, ax = plt.subplots(figsize=figsize)
-    series_per_date.plot(ax=ax, color='#2596be', linewidth=1.5)
-    ax.set_xlabel('')
-    ax.set_ylabel('Series count')
-    ax.set_title(title)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.axhline(series_per_date.max(), color='gray', linestyle='--', alpha=0.5)
-    plt.tight_layout()
-    return fig, ax
-
-
-__all__ = ['ModuleReport', 'Snapshot', 'plot_timeline_health']
+__all__ = ['ModuleReport', 'Snapshot']

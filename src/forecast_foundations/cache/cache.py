@@ -442,6 +442,88 @@ class CacheManager:
             self.delete(key)
         print("✓ Cache cleared")
 
+    def cached(self, key: str, description: str = None, estimate: str = None):
+        """
+        Decorator that adds caching to any function.
+
+        Parameters
+        ----------
+        key : str
+            Cache key for storing the result
+        description : str, optional
+            Description shown during first computation
+        estimate : str, optional
+            Time estimate shown during first computation
+
+        Examples
+        --------
+        >>> from tsfeatures import tsfeatures
+        >>> tsfeatures = cache.cached("diagnostics", "Computing diagnostics")(tsfeatures)
+        >>> diagnostics = tsfeatures(weekly_df, freq=52, threads=8)
+        """
+        return cached(self, key, description, estimate)
+
+    def compute(
+        self,
+        key: str,
+        func,
+        *args,
+        description: str = None,
+        estimate: str = None,
+        **kwargs
+    ):
+        """
+        Run a function with automatic caching.
+
+        Parameters
+        ----------
+        key : str
+            Cache key for storing the result
+        func : callable
+            Function to call (e.g., tsfeatures)
+        *args, **kwargs
+            Arguments passed to the function
+        description : str, optional
+            Description shown during first computation
+        estimate : str, optional
+            Time estimate shown during first computation
+
+        Examples
+        --------
+        >>> diagnostics = cache.compute(
+        ...     "diagnostics",
+        ...     tsfeatures, weekly_df, freq=52, threads=8,
+        ...     description="Computing diagnostics",
+        ...     estimate="~10-15 min"
+        ... )
+        """
+        import time as _time
+
+        # Try cache first
+        result = self.load(key)
+        if result is not None:
+            return result
+
+        # Not cached - show banner
+        if description:
+            print("=" * 60)
+            print(f"⏳ FIRST RUN: {description}")
+            if estimate:
+                print(f"   {estimate}")
+            print("   Subsequent runs load instantly from cache.")
+            print("=" * 60)
+
+        # Compute
+        start = _time.time()
+        result = func(*args, **kwargs)
+        elapsed = _time.time() - start
+
+        # Save
+        self.save(result, key=key)
+        print(f"✓ Computed in {elapsed/60:.1f} min")
+
+        return result
+
 
 class ArtifactManager:
     """
@@ -686,4 +768,74 @@ class NullCacheManager:
         return None
 
 
-__all__ = ['CacheManager', 'CacheEntry', 'ArtifactManager']
+def cached(cache, key: str, description: str = None, estimate: str = None):
+    """
+    Decorator that adds caching to any function.
+
+    Wraps a function so that its result is automatically cached.
+    On first call, computes and caches; on subsequent calls, returns cached value.
+
+    Parameters
+    ----------
+    cache : CacheManager
+        Cache manager instance to use for storage
+    key : str
+        Cache key for storing the result
+    description : str, optional
+        Description shown during first computation (e.g., "Computing diagnostics")
+    estimate : str, optional
+        Time estimate shown during first computation (e.g., "~10-15 min for 30K series")
+
+    Returns
+    -------
+    decorator
+        A decorator that wraps the target function with caching
+
+    Examples
+    --------
+    >>> from tsfeatures import tsfeatures
+    >>>
+    >>> # Wrap tsfeatures with caching
+    >>> tsfeatures = ff.cached(
+    ...     cache,
+    ...     "diagnostics",
+    ...     "Computing diagnostics",
+    ...     "~10-15 min for 30K series"
+    ... )(tsfeatures)
+    >>>
+    >>> # Now just call normally - caching happens automatically
+    >>> diagnostics = tsfeatures(weekly_df, freq=52, threads=8)
+    """
+    import time as _time
+
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # Try cache first
+            result = cache.load(key)
+            if result is not None:
+                return result
+
+            # Not cached - show banner
+            if description:
+                print("=" * 60)
+                print(f"⏳ FIRST RUN: {description}")
+                if estimate:
+                    print(f"   {estimate}")
+                print("   Subsequent runs load instantly from cache.")
+                print("=" * 60)
+
+            # Compute
+            start = _time.time()
+            result = func(*args, **kwargs)
+            elapsed = _time.time() - start
+
+            # Save to cache
+            cache.save(result, key=key)
+            print(f"✓ Computed in {elapsed/60:.1f} min")
+
+            return result
+        return wrapper
+    return decorator
+
+
+__all__ = ['CacheManager', 'CacheEntry', 'ArtifactManager', 'cached']
